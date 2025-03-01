@@ -1,0 +1,12 @@
+package email
+
+import (
+	"context"
+
+	"github.com/OliPou/gommunication/internal/database"
+)
+
+type DBInterface interface {
+	CreateEmail(context.Context, database.CreateEmailParams) (database.Email, error)
+	GetEmailConsumer(context.Context, string) ([]database.Email, error)
+}

@@ -1,0 +1,14 @@
+version: "2"
+sql:
+  - schema: "sql/schema"
+    queries: "sql/queries"
+    engine: "postgresql"
+    gen:
+      go:
+        out: "internal/database"  # Added missing closing quote here
+        # overrides:
+        #   - column: "public.text_messages.err_code"
+        #     go_type:
+        #       import: "database/sql"
+        #       package: "sql"
+        #       type: "NullInt64"

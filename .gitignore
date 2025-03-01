@@ -1,0 +1,3 @@
+# Ignore env variable
+.env
+private/*
