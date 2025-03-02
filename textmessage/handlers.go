@@ -9,6 +9,18 @@ import (
 	"github.com/google/uuid"
 )
 
+// HandlerSendTextMessage sends a text message
+// @Summary Send a text message
+// @Description Send a text message to a recipient
+// @Tags TextMessage
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param body body TextMessageParams true "Text message parameters"
+// @Success 200 {object} TextMessage
+// @Failure 400 {object} common.ErrorResponse
+// @Failure 500 {object} common.ErrorResponse
+// @Router /text-message/send [post]
 func (apiCfg *ApiConfig) HandlerSendTextMessage(c *gin.Context, consumer string) {
 	var params TextMessageParams
 	if err := common.ValidateRequest(c, &params); err != nil {
@@ -25,9 +37,17 @@ func (apiCfg *ApiConfig) HandlerSendTextMessage(c *gin.Context, consumer string)
 		return
 	}
 	common.RespondWithJSON(c, http.StatusOK, sendTextMessage)
-
 }
 
+// @Summary Receive text message webhook
+// @Description Receive text message webhook
+// @Tags TextMessage
+// @Accept json
+// @Produce json
+// @Param body query TextMessageWebHookResponse true "Text message webhook response"
+// @Success 200 {object} map[string]string
+// @Failure 500 {object} common.ErrorResponse
+// @Router /text-message/webhooks/delivery-receipt [get]
 func (apiCfg *ApiConfig) HandlerTextMessageWebHook(c *gin.Context) {
 	var params TextMessageWebHookResponse
 	if err := c.ShouldBindQuery(&params); err != nil {
@@ -42,17 +62,17 @@ func (apiCfg *ApiConfig) HandlerTextMessageWebHook(c *gin.Context) {
 	}
 	fmt.Printf("DLR Received: %+v\n", params)
 	c.JSON(http.StatusOK, gin.H{"message": "DLR received"})
-
 }
 
-//	func (apiCfg *ApiConfig) HandlerGetEmails(c *gin.Context, consumer string) {
-//		emails, err := GetEmails(c, apiCfg, consumer)
-//		if err != nil {
-//			common.RespondError(c, http.StatusInternalServerError, fmt.Sprintf("Error getting emails: %v", err))
-//			return
-//		}
-//		common.RespondWithJSON(c, http.StatusOK, emails)
-//	}
+// @Summary Get text messages
+// @Description Get text messages for a consumer
+// @Tags TextMessage
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {array} TextMessage
+// @Failure 401 {object} common.ErrorResponse
+// @Failure 500 {object} common.ErrorResponse
+// @Router /text-message [get]
 func (apiCfg *ApiConfig) HandlerGetTextMessages(c *gin.Context, consumer string) {
 	textMessages, err := GetTextMessages(c, apiCfg, consumer)
 	if err != nil {
@@ -62,6 +82,15 @@ func (apiCfg *ApiConfig) HandlerGetTextMessages(c *gin.Context, consumer string)
 	common.RespondWithJSON(c, http.StatusOK, textMessages)
 }
 
+// @Summary Get a text message
+// @Description Get a specific text message for a consumer
+// @Tags TextMessage
+// @Produce json
+// @Param messageId path string true "MessageId"
+// @Security ApiKeyAuth
+// @Success 200 {object} TextMessage
+// @Failure 500 {object} common.ErrorResponse
+// @Router /text-message/{messageId} [get]
 func (apiCfg *ApiConfig) HandlerGetTextMessage(c *gin.Context, consumer string) {
 	textMessages, errorCode, err := GetTextMessage(c, apiCfg, consumer)
 	if err != nil {

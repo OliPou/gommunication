@@ -28,3 +28,8 @@ func RespondError(c *gin.Context, status int, message string) {
 	}
 	RespondWithJSON(c, status, map[string]string{"error": message})
 }
+
+// ErrorResponse represents the structure of an error response.
+type ErrorResponse struct {
+	Message string `json:"message"`
+}

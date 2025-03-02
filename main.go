@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	_ "github.com/OliPou/gommunication/docs"
 	"github.com/OliPou/gommunication/email"
 	"github.com/OliPou/gommunication/internal/common"
 	"github.com/OliPou/gommunication/internal/database"
@@ -17,8 +18,27 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// @title Your Project API
+// @version 1.0
+// @description This is a sample server for a pet store.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8081
+// @BasePath /
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name x-application-id
 func main() {
 	// Set Gin to release mode
 	// gin.SetMode(gin.ReleaseMode)
@@ -34,7 +54,7 @@ func main() {
 		portString = "8080"
 	}
 
-	var ginRouterGroupName string = os.Getenv("GIN_ROUTER_GROUP_NAME")
+	// var ginRouterGroupName string = os.Getenv("GIN_ROUTER_GROUP_NAME")
 
 	dbUrl := os.Getenv("DB_URL")
 	sendGridAPIKey := os.Getenv("API_KEY")
@@ -95,6 +115,7 @@ func main() {
 		"Content-Length",
 		"Content-Type",
 		"Authorization",
+		"x-application-id",
 	}
 	config.AllowCredentials = true
 	config.ExposeHeaders = []string{"Content-Length"}
@@ -103,14 +124,19 @@ func main() {
 	// Add CORS middleware
 	router.Use(cors.New(config))
 
-	v1Router := router.Group(fmt.Sprintf("/%s", ginRouterGroupName))
-	v1Router.GET("/healthz", handlerHealthz)
-	v1Router.POST("/send-email", middleware.Auth(apiCfg.HandlerSendEmail))
-	v1Router.GET("/get-send-email", middleware.Auth(apiCfg.HandlerGetEmails))
-	v1Router.POST("/send-text-message", middleware.Auth(apiCfgTextMessage.HandlerSendTextMessage))
-	v1Router.GET("/text-messages-sent", middleware.Auth(apiCfgTextMessage.HandlerGetTextMessages))
-	v1Router.GET("/webhooks/delivery-receipt", apiCfgTextMessage.HandlerTextMessageWebHook)
-	v1Router.GET("/text-message-sent/:messageId", middleware.Auth(apiCfgTextMessage.HandlerGetTextMessage))
+	emailRouter := router.Group(fmt.Sprintf("/email"))
+	textMessageRouter := router.Group(fmt.Sprintf("/text-message"))
+	router.GET("/healthz", handlerHealthz)
+	router.GET("/swagger", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
+	})
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	emailRouter.POST("/send", middleware.Auth(apiCfg.HandlerSendEmail))
+	emailRouter.GET("/", middleware.Auth(apiCfg.HandlerGetEmails))
+	textMessageRouter.POST("/send", middleware.Auth(apiCfgTextMessage.HandlerSendTextMessage))
+	textMessageRouter.GET("/", middleware.Auth(apiCfgTextMessage.HandlerGetTextMessages))
+	textMessageRouter.GET("/webhooks/delivery-receipt", apiCfgTextMessage.HandlerTextMessageWebHook)
+	textMessageRouter.GET("/:messageId", middleware.Auth(apiCfgTextMessage.HandlerGetTextMessage))
 
 	// Start the server
 	if err := router.Run(":" + portString); err != nil {
@@ -132,6 +158,13 @@ func checkDatabase(db *sql.DB) error {
 	return fmt.Errorf("database is not ready")
 }
 
+// @Summary Health check
+// @Description Check if the server is running
+// @Tags Health
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} map[string]interface{}
+// @Router /healthz [get]
 func handlerHealthz(c *gin.Context) {
 	status := struct {
 		Status string `json:"status"`

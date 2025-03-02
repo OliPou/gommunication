@@ -1,0 +1,521 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is a sample server for a pet store.",
+        "title": "Your Project API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.swagger.io/support",
+            "email": "support@swagger.io"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8081",
+    "basePath": "/",
+    "paths": {
+        "/email": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Retrieves all emails for a specific consumer",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Get all emails",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/email.Email"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/email/send": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Sends an email with the provided parameters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Send an email",
+                "parameters": [
+                    {
+                        "description": "Email parameters",
+                        "name": "email",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/email.EmailParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/email.Email"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/healthz": {
+            "get": {
+                "description": "Check if the server is running",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/text-message": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get text messages for a consumer",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TextMessage"
+                ],
+                "summary": "Get text messages",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/textmessage.TextMessage"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/text-message/send": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Send a text message to a recipient",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TextMessage"
+                ],
+                "summary": "Send a text message",
+                "parameters": [
+                    {
+                        "description": "Text message parameters",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/textmessage.TextMessageParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/textmessage.TextMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/text-message/webhooks/delivery-receipt": {
+            "get": {
+                "description": "Receive text message webhook",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TextMessage"
+                ],
+                "summary": "Receive text message webhook",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "name": "api-key",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "client-ref",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "err-code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "message-timestamp",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "messageId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "msisdn",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "network-code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "price",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "scts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "timestamp",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "to",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/text-message/{messageId}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a specific text message for a consumer",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TextMessage"
+                ],
+                "summary": "Get a text message",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "MessageId",
+                        "name": "messageId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/textmessage.TextMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "common.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "email.Email": {
+            "description": "Email information and status",
+            "type": "object",
+            "properties": {
+                "consumer": {
+                    "description": "Consumer identifier",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "description": "Timestamp when the email was created",
+                    "type": "string"
+                },
+                "emailSubject": {
+                    "description": "Subject of the email",
+                    "type": "string"
+                },
+                "emailText": {
+                    "description": "Plain text content of the email",
+                    "type": "string"
+                },
+                "html": {
+                    "description": "HTML content of the email",
+                    "type": "string"
+                },
+                "recipientEmail": {
+                    "description": "Email address of the recipient",
+                    "type": "string"
+                },
+                "recipientName": {
+                    "description": "Name of the recipient",
+                    "type": "string"
+                },
+                "senderEmail": {
+                    "description": "Email address of the sender",
+                    "type": "string"
+                },
+                "senderName": {
+                    "description": "Name of the sender",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Current status of the email",
+                    "type": "string"
+                },
+                "transactionUuid": {
+                    "description": "Unique identifier for the email transaction",
+                    "type": "string"
+                },
+                "userName": {
+                    "description": "Name of the user sending the email",
+                    "type": "string"
+                }
+            }
+        },
+        "email.EmailParams": {
+            "description": "Parameters required to send an email",
+            "type": "object",
+            "required": [
+                "emailSubject",
+                "emailText",
+                "html",
+                "recipientEmail",
+                "recipientName",
+                "senderEmail",
+                "senderName",
+                "userName"
+            ],
+            "properties": {
+                "emailSubject": {
+                    "description": "Subject of the email",
+                    "type": "string"
+                },
+                "emailText": {
+                    "description": "Plain text content of the email",
+                    "type": "string"
+                },
+                "html": {
+                    "description": "HTML content of the email",
+                    "type": "string"
+                },
+                "recipientEmail": {
+                    "description": "Email address of the recipient",
+                    "type": "string"
+                },
+                "recipientName": {
+                    "description": "Name of the recipient",
+                    "type": "string"
+                },
+                "senderEmail": {
+                    "description": "Email address of the sender",
+                    "type": "string"
+                },
+                "senderName": {
+                    "description": "Name of the sender",
+                    "type": "string"
+                },
+                "userName": {
+                    "description": "Name of the user sending the email",
+                    "type": "string"
+                }
+            }
+        },
+        "textmessage.TextMessage": {
+            "type": "object",
+            "properties": {
+                "consumer": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "messageID": {
+                    "type": "string"
+                },
+                "recipient": {
+                    "type": "string"
+                },
+                "sender": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "userName": {
+                    "type": "string"
+                }
+            }
+        },
+        "textmessage.TextMessageParams": {
+            "type": "object",
+            "required": [
+                "recipient",
+                "sender",
+                "text",
+                "userName"
+            ],
+            "properties": {
+                "recipient": {
+                    "type": "string"
+                },
+                "sender": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "userName": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "x-application-id",
+            "in": "header"
+        }
+    }
+}

@@ -1,0 +1,344 @@
+basePath: /
+definitions:
+  common.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  email.Email:
+    description: Email information and status
+    properties:
+      consumer:
+        description: Consumer identifier
+        type: string
+      createdAt:
+        description: Timestamp when the email was created
+        type: string
+      emailSubject:
+        description: Subject of the email
+        type: string
+      emailText:
+        description: Plain text content of the email
+        type: string
+      html:
+        description: HTML content of the email
+        type: string
+      recipientEmail:
+        description: Email address of the recipient
+        type: string
+      recipientName:
+        description: Name of the recipient
+        type: string
+      senderEmail:
+        description: Email address of the sender
+        type: string
+      senderName:
+        description: Name of the sender
+        type: string
+      status:
+        description: Current status of the email
+        type: string
+      transactionUuid:
+        description: Unique identifier for the email transaction
+        type: string
+      userName:
+        description: Name of the user sending the email
+        type: string
+    type: object
+  email.EmailParams:
+    description: Parameters required to send an email
+    properties:
+      emailSubject:
+        description: Subject of the email
+        type: string
+      emailText:
+        description: Plain text content of the email
+        type: string
+      html:
+        description: HTML content of the email
+        type: string
+      recipientEmail:
+        description: Email address of the recipient
+        type: string
+      recipientName:
+        description: Name of the recipient
+        type: string
+      senderEmail:
+        description: Email address of the sender
+        type: string
+      senderName:
+        description: Name of the sender
+        type: string
+      userName:
+        description: Name of the user sending the email
+        type: string
+    required:
+    - emailSubject
+    - emailText
+    - html
+    - recipientEmail
+    - recipientName
+    - senderEmail
+    - senderName
+    - userName
+    type: object
+  textmessage.TextMessage:
+    properties:
+      consumer:
+        type: string
+      createdAt:
+        type: string
+      messageID:
+        type: string
+      recipient:
+        type: string
+      sender:
+        type: string
+      status:
+        type: string
+      userName:
+        type: string
+    type: object
+  textmessage.TextMessageParams:
+    properties:
+      recipient:
+        type: string
+      sender:
+        type: string
+      text:
+        type: string
+      userName:
+        type: string
+    required:
+    - recipient
+    - sender
+    - text
+    - userName
+    type: object
+host: localhost:8081
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server for a pet store.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Your Project API
+  version: "1.0"
+paths:
+  /email:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all emails for a specific consumer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/email.Email'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get all emails
+      tags:
+      - Email
+  /email/send:
+    post:
+      consumes:
+      - application/json
+      description: Sends an email with the provided parameters
+      parameters:
+      - description: Email parameters
+        in: body
+        name: email
+        required: true
+        schema:
+          $ref: '#/definitions/email.EmailParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/email.Email'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send an email
+      tags:
+      - Email
+  /healthz:
+    get:
+      consumes:
+      - application/json
+      description: Check if the server is running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Health check
+      tags:
+      - Health
+  /text-message:
+    get:
+      description: Get text messages for a consumer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/textmessage.TextMessage'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get text messages
+      tags:
+      - TextMessage
+  /text-message/{messageId}:
+    get:
+      description: Get a specific text message for a consumer
+      parameters:
+      - description: MessageId
+        in: path
+        name: messageId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/textmessage.TextMessage'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get a text message
+      tags:
+      - TextMessage
+  /text-message/send:
+    post:
+      consumes:
+      - application/json
+      description: Send a text message to a recipient
+      parameters:
+      - description: Text message parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/textmessage.TextMessageParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/textmessage.TextMessage'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send a text message
+      tags:
+      - TextMessage
+  /text-message/webhooks/delivery-receipt:
+    get:
+      consumes:
+      - application/json
+      description: Receive text message webhook
+      parameters:
+      - in: query
+        name: api-key
+        type: string
+      - in: query
+        name: client-ref
+        type: string
+      - in: query
+        name: err-code
+        type: string
+      - in: query
+        name: message-timestamp
+        type: string
+      - in: query
+        name: messageId
+        type: string
+      - in: query
+        name: msisdn
+        type: string
+      - in: query
+        name: network-code
+        type: string
+      - in: query
+        name: price
+        type: string
+      - in: query
+        name: scts
+        type: string
+      - in: query
+        name: status
+        type: string
+      - in: query
+        name: timestamp
+        type: string
+      - in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      summary: Receive text message webhook
+      tags:
+      - TextMessage
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: x-application-id
+    type: apiKey
+swagger: "2.0"

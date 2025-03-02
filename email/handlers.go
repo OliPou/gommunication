@@ -9,6 +9,17 @@ import (
 	"github.com/google/uuid"
 )
 
+// HandlerSendEmail godoc
+// @Summary Send an email
+// @Description Sends an email with the provided parameters
+// @Tags Email
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param email body EmailParams true "Email parameters"
+// @Success 200 {object} Email
+// @Failure 500 {object} common.ErrorResponse
+// @Router /email/send [post]
 func (apiCfg *ApiConfig) HandlerSendEmail(c *gin.Context, consumer string) {
 	var params EmailParams
 	if err := common.ValidateRequest(c, &params); err != nil {
@@ -24,6 +35,16 @@ func (apiCfg *ApiConfig) HandlerSendEmail(c *gin.Context, consumer string) {
 
 }
 
+// HandlerGetEmails godoc
+// @Summary Get all emails
+// @Description Retrieves all emails for a specific consumer
+// @Tags Email
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {array} Email
+// @Failure 500 {object} common.ErrorResponse
+// @Router /email [get]
 func (apiCfg *ApiConfig) HandlerGetEmails(c *gin.Context, consumer string) {
 	emails, err := GetEmails(c, apiCfg, consumer)
 	if err != nil {
