@@ -1,3 +1,48 @@
-# Ignore env variable
+# Go build artifacts
+/bin/
+/build/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go modules
+/vendor/
+
+# Temp and log files
+*.log
+*.tmp
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE/editor folders and files
+.vscode/
+.idea/
+*.swp
+
+# Environment and config files
 .env
+.env.*
+
+# Test and coverage files
+coverage.out
+*.coverprofile
+
+# Git hooks and tooling configs
+.githooks/
+.pre-commit-config.yaml
+
+# Compiled binaries and archives
+*.bin
+*.tar.gz
+*.zip
+*.tar
+
+
 private/*
