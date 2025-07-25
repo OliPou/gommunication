@@ -29,7 +29,7 @@ func (apiCfg *ApiConfig) HandlerSendEmail(c *gin.Context, consumer string) {
 	}
 	sendEmail, err := SendEmail(c, params, consumer, apiCfg, uuid.New)
 	if err != nil {
-		common.RespondError(c, http.StatusInternalServerError, fmt.Sprintf("Error logging database: %v", err))
+		common.RespondError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 

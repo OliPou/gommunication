@@ -10,3 +10,7 @@ type DBInterface interface {
 	CreateEmail(context.Context, database.CreateEmailParams) (database.Email, error)
 	GetEmailConsumer(context.Context, string) ([]database.Email, error)
 }
+
+type EmailSender interface {
+	Send(email Email) (SendResult, error)
+}

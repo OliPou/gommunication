@@ -4,9 +4,11 @@ import (
 	"os"
 
 	"github.com/OliPou/gommunication/email"
+	"github.com/OliPou/gommunication/email/providers"
 	"github.com/OliPou/gommunication/internal/config"
 	"github.com/OliPou/gommunication/internal/database"
 	"github.com/OliPou/gommunication/textmessage"
+	"github.com/sendgrid/sendgrid-go"
 )
 
 type AppDependencies struct {
@@ -18,9 +20,13 @@ func BuildDependencies() *AppDependencies {
 	db := config.DB
 	dbQueries := database.New(db)
 
+	emailSender := &providers.SendGridEmailSender{
+		Client: sendgrid.NewSendClient(os.Getenv("API_KEY")),
+	}
+
 	apiCfg := &email.ApiConfig{
-		DB:     dbQueries,
-		ApiKey: os.Getenv("API_KEY"),
+		DB:          dbQueries,
+		EmailSender: emailSender,
 	}
 
 	apiCfgTextMessage := &textmessage.ApiConfig{

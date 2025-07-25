@@ -3,14 +3,13 @@ package email
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 
+	"github.com/OliPou/gommunication/internal/config"
 	"github.com/OliPou/gommunication/internal/database"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/sendgrid/sendgrid-go"
-	"github.com/sendgrid/sendgrid-go/helpers/mail"
+	"go.uber.org/zap"
 )
 
 type UUIDGenerator func() uuid.UUID
@@ -34,6 +33,8 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 	emailSubject := dereferenceString(params.EmailSubject)
 	html := dereferenceString(params.Html)
 
+	config.Log.Debug("Sending email", zap.String("transaction_uuid", transactionUUID.String()), zap.String("consumer", consumer), zap.String("subject", emailSubject.String), zap.String("html", html.String))
+
 	// Create email params struct with single instances of repeated fields
 	emailParams := database.CreateEmailParams{
 		TransactionUuid: transactionUUID,
@@ -51,36 +52,32 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 
 	dbEmail, err := apiCfg.DB.CreateEmail(c, emailParams)
 	if err != nil {
-		fmt.Printf("Error creating entry in db: %v", err)
+		config.Log.Error("Error creating email entry in database", zap.Error(err))
 		return Email{}, fmt.Errorf("error creating email entry")
 	}
 
-	// Send email using SendGrid
-	from := mail.NewEmail(params.SenderName, params.SenderEmail)
-	subject := emailSubject.String
-	to := mail.NewEmail(params.RecipientName, params.RecipientEmail)
-	plainTextContent := "This is a plain text version of the email."
-	htmlContent := html.String
-	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
-	client := sendgrid.NewSendClient(apiCfg.ApiKey)
-	response, err := client.Send(message)
+	email := DatabaseEmailToEmail(dbEmail)
+	// Send the email using the configured email sender
+	sendResult, err := apiCfg.EmailSender.Send(email)
 	if err != nil {
-		log.Println(err)
+		config.Log.Error("Error sending email", zap.Error(err))
 		return Email{}, fmt.Errorf("error sending email: %v", err)
-	} else {
-		fmt.Println(response.StatusCode)
-		fmt.Println(response.Body)
-		fmt.Println(response.Headers)
 	}
 
-	return DatabaseEmailToEmail(dbEmail), nil
+	config.Log.Info("Email sent successfully",
+		zap.Int("status_code", sendResult.StatusCode),
+		zap.String("body", sendResult.Body),
+		zap.Any("headers", sendResult.Headers),
+	)
+
+	return email, nil
 }
 
 func GetEmails(c *gin.Context, apiCfg *ApiConfig, consumer string) ([]Email, error) {
 
 	dbEmails, err := apiCfg.DB.GetEmailConsumer(c, consumer)
 	if err != nil {
-		fmt.Printf("Error getting db entry %v", err)
+		config.Log.Error("Error getting email entries from database", zap.Error(err))
 		return []Email{}, fmt.Errorf("error getting email entry")
 	}
 	emails := make([]Email, 0, len(dbEmails))
