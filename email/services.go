@@ -28,6 +28,21 @@ func dereferenceString(s *string) sql.NullString {
 	}
 }
 
+// SendEmail handles the process of sending an email within the application.
+// It generates a unique transaction UUID, logs the email sending attempt, creates a database entry for the email,
+// and sends the email using the configured email sender. The function returns the sent Email struct or an error
+// if any step fails.
+//
+// Parameters:
+//   - c: the Gin context for the current HTTP request.
+//   - params: the parameters required to compose the email (subject, HTML content, sender/recipient info, etc.).
+//   - consumer: a string identifying the consumer of the email service.
+//   - apiCfg: the API configuration containing database and email sender instances.
+//   - generateUUID: a function to generate a new UUID for the transaction.
+//
+// Returns:
+//   - Email: the sent email as an Email struct.
+//   - error: an error if the email could not be created or sent.
 func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiConfig, generateUUID UUIDGenerator) (Email, error) {
 	transactionUUID := generateUUID()
 	emailSubject := dereferenceString(params.EmailSubject)
@@ -56,12 +71,14 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 		return Email{}, fmt.Errorf("error creating email entry")
 	}
 
+	// Convert database email entry to Email struct
 	email := DatabaseEmailToEmail(dbEmail)
+
 	// Send the email using the configured email sender
 	sendResult, err := apiCfg.EmailSender.Send(email)
 	if err != nil {
 		config.Log.Error("Error sending email", zap.Error(err))
-		return Email{}, fmt.Errorf("error sending email: %v", err)
+		return Email{}, fmt.Errorf("Error sending email: %w", err)
 	}
 
 	config.Log.Info("Email sent successfully",
@@ -73,6 +90,9 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 	return email, nil
 }
 
+// GetEmails retrieves a list of emails associated with the specified consumer from the database.
+// It takes a Gin context, an API configuration, and the consumer identifier as parameters.
+// Returns a slice of Email objects and an error if the retrieval fails.
 func GetEmails(c *gin.Context, apiCfg *ApiConfig, consumer string) ([]Email, error) {
 
 	dbEmails, err := apiCfg.DB.GetEmailConsumer(c, consumer)

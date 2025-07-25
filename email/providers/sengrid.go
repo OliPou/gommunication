@@ -14,6 +14,18 @@ type SendGridEmailSender struct {
 	Client *sendgrid.Client
 }
 
+// Send sends an email using the SendGrid API client.
+// It constructs the email message from the provided email.Email struct,
+// sends it via the SendGrid client, and returns the result or an error.
+// If SendGrid returns an error status code (>= 400), the error is logged
+// and an error is returned.
+//
+// Parameters:
+//   - e: The email.Email struct containing sender, recipient, subject, and content.
+//
+// Returns:
+//   - email.SendResult: The result of the send operation, including status code, body, and headers.
+//   - error: An error if sending fails or SendGrid returns an error status code.
 func (s *SendGridEmailSender) Send(e email.Email) (email.SendResult, error) {
 	from := mail.NewEmail(e.SenderName, e.SenderEmail)
 	to := mail.NewEmail(e.RecipientName, e.RecipientEmail)
