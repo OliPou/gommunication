@@ -22,3 +22,7 @@ SELECT
 FROM emails
 WHERE consumer = $1
 ORDER BY created_at DESC;
+-- name: UpdateEmailStatus :exec
+UPDATE emails
+SET status = $2
+WHERE transaction_uuid = $1;

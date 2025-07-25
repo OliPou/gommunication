@@ -76,9 +76,15 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 
 	// Send the email using the configured email sender
 	sendResult, err := apiCfg.EmailSender.Send(email)
+
+	// If sending fails, log the error and update the email status in the database
 	if err != nil {
-		config.Log.Error("Error sending email", zap.Error(err))
-		return Email{}, fmt.Errorf("Error sending email: %w", err)
+		config.Log.Error("Error sending email", zap.Error(err), zap.String("transaction_uuid", transactionUUID.String()))
+		if err := failedSendEmail(c, apiCfg, transactionUUID, &email); err != nil {
+			config.Log.Error("Error updating email status to failed in database", zap.Error(err))
+			return email, fmt.Errorf("error updating email status to failed")
+		}
+		return email, fmt.Errorf("error sending email: %w", err)
 	}
 
 	config.Log.Info("Email sent successfully",
@@ -86,6 +92,12 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 		zap.String("body", sendResult.Body),
 		zap.Any("headers", sendResult.Headers),
 	)
+
+	// Update the email status to 'sent' in the database
+	if err := successSendEmail(c, apiCfg, transactionUUID, &email); err != nil {
+		config.Log.Error("Error updating email status to sent in database", zap.Error(err))
+		return email, fmt.Errorf("error updating email status to sent")
+	}
 
 	return email, nil
 }
@@ -105,4 +117,33 @@ func GetEmails(c *gin.Context, apiCfg *ApiConfig, consumer string) ([]Email, err
 		emails = append(emails, DatabaseEmailToEmail(dbEmail))
 	}
 	return emails, nil
+}
+
+func failedSendEmail(c *gin.Context, apiCfg *ApiConfig, transactionUUID uuid.UUID, email *Email) error {
+	config.Log.Error("Failed to send email", zap.String("transaction_uuid", transactionUUID.String()))
+	status := "failed"
+	email.Status = status
+	if err := apiCfg.DB.UpdateEmailStatus(c, database.UpdateEmailStatusParams{
+		TransactionUuid: transactionUUID,
+		Status:          status,
+	}); err != nil {
+		config.Log.Error("Error updating email status to failed in database", zap.Error(err))
+		return fmt.Errorf("error updating email status to failed")
+	}
+	return nil
+}
+
+func successSendEmail(c *gin.Context, apiCfg *ApiConfig, transactionUUID uuid.UUID, email *Email) error {
+	config.Log.Info("Email sent successfully", zap.String("transaction_uuid", transactionUUID.String()))
+	status := "sent"
+	email.Status = status
+	if err := apiCfg.DB.UpdateEmailStatus(c, database.UpdateEmailStatusParams{
+		TransactionUuid: transactionUUID,
+		Status:          status,
+	}); err != nil {
+		config.Log.Error("Error updating email status to sent in database", zap.Error(err))
+		return fmt.Errorf("error updating email status to sent")
+	}
+
+	return nil
 }

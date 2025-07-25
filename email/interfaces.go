@@ -8,6 +8,7 @@ import (
 
 type DBInterface interface {
 	CreateEmail(context.Context, database.CreateEmailParams) (database.Email, error)
+	UpdateEmailStatus(context.Context, database.UpdateEmailStatusParams) error
 	GetEmailConsumer(context.Context, string) ([]database.Email, error)
 }
 
