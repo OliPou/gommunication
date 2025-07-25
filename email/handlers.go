@@ -7,6 +7,7 @@ import (
 	"github.com/OliPou/gommunication/internal/common"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"go.uber.org/zap/zapcore"
 )
 
 // HandlerSendEmail godoc
@@ -31,6 +32,8 @@ func (apiCfg *ApiConfig) HandlerSendEmail(c *gin.Context, consumer string) {
 		common.RespondError(c, http.StatusInternalServerError, fmt.Sprintf("Error logging database: %v", err))
 		return
 	}
+
+	common.LogClientRequest(c, "email.SendEmail", fmt.Sprintf("Email sent with ID: %s", sendEmail.TransactionUuid), zapcore.InfoLevel)
 	common.RespondWithJSON(c, http.StatusOK, sendEmail)
 
 }
@@ -46,10 +49,12 @@ func (apiCfg *ApiConfig) HandlerSendEmail(c *gin.Context, consumer string) {
 // @Failure 500 {object} common.ErrorResponse
 // @Router /email [get]
 func (apiCfg *ApiConfig) HandlerGetEmails(c *gin.Context, consumer string) {
+
 	emails, err := GetEmails(c, apiCfg, consumer)
 	if err != nil {
 		common.RespondError(c, http.StatusInternalServerError, fmt.Sprintf("Error getting emails: %v", err))
 		return
 	}
+	common.LogClientRequest(c, "email.GetEmails", fmt.Sprintf("Retrieved %d emails for consumer: %s", len(emails), consumer), zapcore.InfoLevel)
 	common.RespondWithJSON(c, http.StatusOK, emails)
 }
