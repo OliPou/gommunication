@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/OliPou/gommunication/di"
@@ -10,6 +9,7 @@ import (
 	"github.com/OliPou/gommunication/internal/routers"
 	"github.com/gin-contrib/cors"
 	_ "github.com/lib/pq"
+	"go.uber.org/zap"
 )
 
 // @title Your Project API
@@ -29,11 +29,34 @@ import (
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name x-application-id
+
 func main() {
+	if err := run(); err != nil {
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	// Initialize logger
+	config.InitLogger()
+	defer config.Log.Sync()
+
 	// Load env
-	config.LoadEnv()
+	if err := config.LoadEnv(); err != nil {
+		config.Log.Error("Failed to load environment variables", zap.Error(err))
+		return err
+	}
+
 	// Init DB connection
-	config.InitDB()
+	if err := config.InitDB(); err != nil {
+		return err
+	}
+	defer func() {
+		if err := config.DB.Close(); err != nil {
+			config.Log.Error("Failed to close DB", zap.Error(err))
+		}
+	}()
+
 	// Initialize dependencies
 	deps := di.BuildDependencies()
 	// Initialize the router
@@ -47,13 +70,10 @@ func main() {
 		portString = "8080"
 	}
 
-	fmt.Printf("Server starting on port: %s\n", portString)
+	config.Log.Info("Server starting", zap.String("port", portString))
 
 	// Start the server
-	if err := router.Run(":" + portString); err != nil {
-		fmt.Printf("Failed to start server: %v\n", err)
-		os.Exit(1)
-	}
+	return router.Run(":" + portString)
 }
 
 // config is the CORS configuration for the Gin router

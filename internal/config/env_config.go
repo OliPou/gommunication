@@ -1,14 +1,16 @@
 package config
 
 import (
-	"log"
-
 	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 )
 
-func LoadEnv() {
+func LoadEnv() error {
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("No .env file found. Using system env vars.")
+		Log.Error("Error loading .env file", zap.Error(err))
+		return err
 	}
+
+	return nil
 }
