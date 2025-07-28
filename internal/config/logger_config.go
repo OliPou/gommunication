@@ -42,10 +42,7 @@ func LogClient(c *gin.Context, message string, level zapcore.Level) {
 
 	logLine := fmt.Sprintf("[%s] [%s] %s", clientIP, requestID, message)
 
-	logger := Log.WithOptions(zap.AddCallerSkip(1)).With(
-		zap.String("ip", clientIP),
-		zap.String("request_id", requestID),
-	)
+	logger := Log.WithOptions(zap.AddCallerSkip(1))
 
 	switch level {
 	case zapcore.DebugLevel:

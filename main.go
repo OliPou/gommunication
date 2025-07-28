@@ -70,7 +70,7 @@ func run() error {
 		portString = "8080"
 	}
 
-	config.Log.Info("Server starting", zap.String("port", portString))
+	config.LogClient(nil, "Server starting on port "+portString, zap.InfoLevel)
 
 	// Start the server
 	return router.Run(":" + portString)

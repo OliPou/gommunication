@@ -29,7 +29,7 @@ type SendGridEmailSender struct {
 func (s *SendGridEmailSender) Send(e email.Email) (email.SendResult, error) {
 	from := mail.NewEmail(e.SenderName, e.SenderEmail)
 	to := mail.NewEmail(e.RecipientName, e.RecipientEmail)
-	message := mail.NewSingleEmail(from, e.EmailSubject, to, "Plain text fallback", e.Html)
+	message := mail.NewSingleEmail(from, e.EmailSubject, to, email.HtmlToPlainText(e.Html), e.Html)
 
 	resp, err := s.Client.Send(message)
 	if err != nil {
@@ -37,11 +37,7 @@ func (s *SendGridEmailSender) Send(e email.Email) (email.SendResult, error) {
 	}
 
 	if resp.StatusCode >= 400 {
-		config.Log.Error("SendGrid returned an error",
-			zap.Int("status_code", resp.StatusCode),
-			zap.String("body", resp.Body),
-			zap.Any("headers", resp.Headers),
-		)
+		config.LogClient(nil, "SendGrid returned an error: "+fmt.Sprintf("status %d: %s", resp.StatusCode, resp.Body), zap.ErrorLevel)
 		return email.SendResult{}, fmt.Errorf("sendgrid returned status %d: %s", resp.StatusCode, resp.Body)
 	}
 

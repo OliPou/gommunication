@@ -3,10 +3,12 @@ package email
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/OliPou/gommunication/internal/config"
 	"github.com/OliPou/gommunication/internal/database"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -48,7 +50,8 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 	emailSubject := dereferenceString(params.EmailSubject)
 	html := dereferenceString(params.Html)
 
-	config.Log.Debug("Sending email", zap.String("transaction_uuid", transactionUUID.String()), zap.String("consumer", consumer), zap.String("subject", emailSubject.String), zap.String("html", html.String))
+	description := fmt.Sprintf("Sending email | transaction_uuid: %s | consumer: %s | subject: %s | html: %s", transactionUUID.String(), consumer, emailSubject.String, html.String)
+	config.LogClient(nil, description, zap.InfoLevel)
 
 	// Create email params struct with single instances of repeated fields
 	emailParams := database.CreateEmailParams{
@@ -67,7 +70,7 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 
 	dbEmail, err := apiCfg.DB.CreateEmail(c, emailParams)
 	if err != nil {
-		config.Log.Error("Error creating email entry in database", zap.Error(err))
+		config.LogClient(nil, "Error creating email entry in database: "+err.Error(), zap.ErrorLevel)
 		return Email{}, fmt.Errorf("error creating email entry")
 	}
 
@@ -79,23 +82,20 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 
 	// If sending fails, log the error and update the email status in the database
 	if err != nil {
-		config.Log.Error("Error sending email", zap.Error(err), zap.String("transaction_uuid", transactionUUID.String()))
+		config.LogClient(nil, "Error sending email: "+err.Error(), zap.ErrorLevel)
 		if err := failedSendEmail(c, apiCfg, transactionUUID, &email); err != nil {
-			config.Log.Error("Error updating email status to failed in database", zap.Error(err))
+			config.LogClient(nil, "Error updating email status to failed in database: "+err.Error(), zap.ErrorLevel)
 			return email, fmt.Errorf("error updating email status to failed")
 		}
 		return email, fmt.Errorf("error sending email: %w", err)
 	}
 
-	config.Log.Info("Email sent successfully",
-		zap.Int("status_code", sendResult.StatusCode),
-		zap.String("body", sendResult.Body),
-		zap.Any("headers", sendResult.Headers),
-	)
+	// Log the successful send result
+	config.LogClient(nil, "Email sent successfully: "+fmt.Sprintf("status %d: %s", sendResult.StatusCode, sendResult.Body), zap.InfoLevel)
 
 	// Update the email status to 'sent' in the database
 	if err := successSendEmail(c, apiCfg, transactionUUID, &email); err != nil {
-		config.Log.Error("Error updating email status to sent in database", zap.Error(err))
+		config.LogClient(nil, "Error updating email status to sent in database: "+err.Error(), zap.ErrorLevel)
 		return email, fmt.Errorf("error updating email status to sent")
 	}
 
@@ -109,7 +109,7 @@ func GetEmails(c *gin.Context, apiCfg *ApiConfig, consumer string) ([]Email, err
 
 	dbEmails, err := apiCfg.DB.GetEmailConsumer(c, consumer)
 	if err != nil {
-		config.Log.Error("Error getting email entries from database", zap.Error(err))
+		config.LogClient(nil, "Error getting email entries from database: "+err.Error(), zap.ErrorLevel)
 		return []Email{}, fmt.Errorf("error getting email entry")
 	}
 	emails := make([]Email, 0, len(dbEmails))
@@ -120,30 +120,47 @@ func GetEmails(c *gin.Context, apiCfg *ApiConfig, consumer string) ([]Email, err
 }
 
 func failedSendEmail(c *gin.Context, apiCfg *ApiConfig, transactionUUID uuid.UUID, email *Email) error {
-	config.Log.Error("Failed to send email", zap.String("transaction_uuid", transactionUUID.String()))
+	config.LogClient(nil, "Failed to send email", zap.ErrorLevel)
 	status := "failed"
 	email.Status = status
 	if err := apiCfg.DB.UpdateEmailStatus(c, database.UpdateEmailStatusParams{
 		TransactionUuid: transactionUUID,
 		Status:          status,
 	}); err != nil {
-		config.Log.Error("Error updating email status to failed in database", zap.Error(err))
+		config.LogClient(nil, "Error updating email status to failed in database: "+err.Error(), zap.ErrorLevel)
 		return fmt.Errorf("error updating email status to failed")
 	}
 	return nil
 }
 
 func successSendEmail(c *gin.Context, apiCfg *ApiConfig, transactionUUID uuid.UUID, email *Email) error {
-	config.Log.Info("Email sent successfully", zap.String("transaction_uuid", transactionUUID.String()))
+	config.LogClient(nil, "Email sent successfully", zap.InfoLevel)
 	status := "sent"
 	email.Status = status
 	if err := apiCfg.DB.UpdateEmailStatus(c, database.UpdateEmailStatusParams{
 		TransactionUuid: transactionUUID,
 		Status:          status,
 	}); err != nil {
-		config.Log.Error("Error updating email status to sent in database", zap.Error(err))
+		config.LogClient(nil, "Error updating email status to sent in database: "+err.Error(), zap.ErrorLevel)
 		return fmt.Errorf("error updating email status to sent")
 	}
 
 	return nil
+}
+
+// HtmlToPlainText converts an HTML string to plain text by parsing the HTML and extracting its textual content.
+// If an error occurs during parsing, it logs the error and returns an empty string.
+//
+// Parameters:
+//   - html: The HTML string to be converted.
+//
+// Returns:
+//   - A plain text representation of the HTML content, or an empty string if parsing fails.
+func HtmlToPlainText(html string) string {
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		config.LogClient(nil, "Error parsing HTML to plain text: "+err.Error(), zap.ErrorLevel)
+		return ""
+	}
+	return strings.TrimSpace(doc.Text())
 }
