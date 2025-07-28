@@ -25,25 +25,25 @@ const (
 func InitDB() error {
 	dbUrl := os.Getenv("DB_URL")
 	if dbUrl == "" {
-		Log.Error("DB_URL environment variable is not set")
+		LogClient(nil, "DB_URL environment variable is not set", zap.ErrorLevel)
 		return fmt.Errorf("DB_URL environment variable is not set")
 	}
 
-	Log.Info("Connecting to database...", zap.String("db_url", dbUrl))
+	LogClient(nil, "Connecting to database...", zap.ErrorLevel)
 
 	db, err := sql.Open("postgres", dbUrl)
 	if err != nil {
-		Log.Error("Failed to open DB connection", zap.Error(err))
+		LogClient(nil, "Failed to open DB connection: "+err.Error(), zap.ErrorLevel)
 		return err
 	}
 
 	// Check if DB is ready (ping)
 	if err := checkDatabase(db); err != nil {
-		Log.Error("Database is not ready", zap.Error(err))
+		LogClient(nil, "Database is not ready: "+err.Error(), zap.ErrorLevel)
 		return err
 	}
 
-	Log.Info("Database connection established successfully")
+	LogClient(nil, "Database connection established successfully", zap.InfoLevel)
 	DB = db
 	return nil
 }
@@ -62,17 +62,13 @@ func checkDatabase(db *sql.DB) error {
 
 		// If the error is fatal, log it and return
 		if isFatalDatabaseError(err) {
-			Log.Error("Fatal database error — aborting retries", zap.Error(err))
+			LogClient(nil, "Fatal database error: "+err.Error(), zap.ErrorLevel)
+			LogClient(nil, "Fatal database error — aborting retries", zap.ErrorLevel)
 			return err
 		}
 
 		// Log non-fatal errors and retry
-		Log.Warn("Database is not ready, retrying...",
-			zap.Int("attempt", i+1),
-			zap.Int("max_attempts", maxAttempts),
-			zap.Error(err),
-		)
-
+		LogClient(nil, fmt.Sprintf("Attempt %d/%d: Database not ready, retrying...", i+1, maxAttempts), zap.WarnLevel)
 		time.Sleep(retryDelay)
 	}
 

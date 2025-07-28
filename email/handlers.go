@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/OliPou/gommunication/internal/common"
+	"github.com/OliPou/gommunication/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go.uber.org/zap/zapcore"
@@ -33,7 +34,7 @@ func (apiCfg *ApiConfig) HandlerSendEmail(c *gin.Context, consumer string) {
 		return
 	}
 
-	common.LogClientRequest(c, "email.SendEmail", fmt.Sprintf("Email sent with ID: %s", sendEmail.TransactionUuid), zapcore.InfoLevel)
+	config.LogClient(c, fmt.Sprintf("Email sent with ID: %s", sendEmail.TransactionUuid), zapcore.InfoLevel)
 	common.RespondWithJSON(c, http.StatusOK, sendEmail)
 
 }
@@ -55,6 +56,6 @@ func (apiCfg *ApiConfig) HandlerGetEmails(c *gin.Context, consumer string) {
 		common.RespondError(c, http.StatusInternalServerError, fmt.Sprintf("Error getting emails: %v", err))
 		return
 	}
-	common.LogClientRequest(c, "email.GetEmails", fmt.Sprintf("Retrieved %d emails for consumer: %s", len(emails), consumer), zapcore.InfoLevel)
+	config.LogClient(c, fmt.Sprintf("Retrieved %d emails for consumer: %s", len(emails), consumer), zapcore.InfoLevel)
 	common.RespondWithJSON(c, http.StatusOK, emails)
 }

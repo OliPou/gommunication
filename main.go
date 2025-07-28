@@ -42,17 +42,18 @@ func run() error {
 
 	// Load env
 	if err := config.LoadEnv(); err != nil {
-		config.Log.Error("Failed to load environment variables", zap.Error(err))
+		config.LogClient(nil, "Failed to load environment variables: "+err.Error(), zap.ErrorLevel)
 		return err
 	}
 
 	// Init DB connection
 	if err := config.InitDB(); err != nil {
+		config.LogClient(nil, "Failed to initialize database: "+err.Error(), zap.ErrorLevel)
 		return err
 	}
 	defer func() {
 		if err := config.DB.Close(); err != nil {
-			config.Log.Error("Failed to close DB", zap.Error(err))
+			config.LogClient(nil, "Failed to close DB: "+err.Error(), zap.ErrorLevel)
 		}
 	}()
 

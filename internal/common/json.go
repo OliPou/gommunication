@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 
+	"github.com/OliPou/gommunication/internal/config"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap/zapcore"
 )
@@ -25,7 +26,6 @@ func RespondWithJSON(c *gin.Context, status int, payload interface{}) {
 
 func RespondError(c *gin.Context, status int, message string) {
 
-	serviceMethod := fmt.Sprintf("%s %s", c.Request.Method, c.FullPath())
 	logMsg := fmt.Sprintf("Error response: %s", message)
 
 	var level zapcore.Level
@@ -38,7 +38,7 @@ func RespondError(c *gin.Context, status int, message string) {
 		level = zapcore.InfoLevel
 	}
 
-	LogClientRequest(c, serviceMethod, logMsg, level)
+	config.LogClient(c, logMsg, level)
 
 	RespondWithJSON(c, status, map[string]string{"error": message})
 }
