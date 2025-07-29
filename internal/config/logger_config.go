@@ -17,10 +17,13 @@ var Log *zap.Logger
 // This function assigns the configured logger to the global Log variable.
 func InitLogger() {
 	encoderCfg := zapcore.EncoderConfig{
-		TimeKey:        "timestamp",
-		LevelKey:       "level",
-		MessageKey:     "message",
-		CallerKey:      "caller",
+		TimeKey:     "timestamp",
+		LevelKey:    "level",
+		MessageKey:  "message",
+		NameKey:     "logger",
+		FunctionKey: "func",
+
+		EncodeName:     zapcore.FullNameEncoder,
 		EncodeLevel:    zapcore.CapitalLevelEncoder,
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
@@ -33,14 +36,16 @@ func InitLogger() {
 		zapcore.InfoLevel,
 	)
 
-	Log = zap.New(core, zap.AddCaller())
+	Log = zap.New(core, zap.AddCaller(), zap.WithCaller(true))
 }
 
 func LogClient(c *gin.Context, message string, level zapcore.Level) {
 	clientIP := getClientIP(c)
 	requestID := extractRequestID(c)
+	tenantID := "no-tenant-id"
+	organizationID := "no-organization-id"
 
-	logLine := fmt.Sprintf("[%s] [%s] %s", clientIP, requestID, message)
+	logLine := fmt.Sprintf("[%s] [%s] [%s]-[%s] %s", clientIP, requestID, tenantID, organizationID, message)
 
 	logger := Log.WithOptions(zap.AddCallerSkip(1))
 
