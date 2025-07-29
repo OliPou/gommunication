@@ -29,7 +29,26 @@ type SendGridEmailSender struct {
 func (s *SendGridEmailSender) Send(e email.Email) (email.SendResult, error) {
 	from := mail.NewEmail(e.SenderName, e.SenderEmail)
 	to := mail.NewEmail(e.RecipientName, e.RecipientEmail)
-	message := mail.NewSingleEmail(from, e.EmailSubject, to, email.HtmlToPlainText(e.Html), e.Html)
+
+	// Plain text fallback
+	plainText := email.HtmlToPlainText(e.Html)
+
+	message := mail.NewV3Mail()
+	message.SetFrom(from)
+	message.Subject = e.EmailSubject
+
+	p := mail.NewPersonalization()
+	p.AddTos(to)
+	message.AddPersonalizations(p)
+
+	message.AddContent(mail.NewContent("text/plain", plainText))
+	message.AddContent(mail.NewContent("text/html", e.Html))
+
+	// message := mail.NewSingleEmail(from, e.EmailSubject, to, email.HtmlToPlainText(e.Html), e.Html)
+
+	if e.EnableOpenTracking {
+		enableOpenTracking(message)
+	}
 
 	resp, err := s.Client.Send(message)
 	if err != nil {
@@ -46,4 +65,12 @@ func (s *SendGridEmailSender) Send(e email.Email) (email.SendResult, error) {
 		Body:       resp.Body,
 		Headers:    resp.Headers,
 	}, nil
+}
+
+func enableOpenTracking(message *mail.SGMailV3) {
+	trackingSettings := mail.NewTrackingSettings()
+	openTracking := mail.NewOpenTrackingSetting()
+	openTracking.SetEnable(true)
+	trackingSettings.SetOpenTracking(openTracking)
+	message.SetTrackingSettings(trackingSettings)
 }

@@ -17,26 +17,29 @@ const createEmail = `-- name: CreateEmail :one
 INSERT INTO emails (
     transaction_uuid, consumer, user_name, email_subject, email_text, html,
     sender_name, sender_email, recipients_name, recipients_email,
-    status, created_at
+    status, created_at,
+    enable_open_tracking, opened
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
 )
-RETURNING transaction_uuid, consumer, user_name, email_subject, email_text, html, sender_name, sender_email, recipients_name, recipients_email, status, created_at
+RETURNING transaction_uuid, consumer, user_name, email_subject, email_text, html, sender_name, sender_email, recipients_name, recipients_email, status, created_at, enable_open_tracking, opened
 `
 
 type CreateEmailParams struct {
-	TransactionUuid uuid.UUID
-	Consumer        string
-	UserName        string
-	EmailSubject    sql.NullString
-	EmailText       sql.NullString
-	Html            sql.NullString
-	SenderName      string
-	SenderEmail     string
-	RecipientsName  string
-	RecipientsEmail string
-	Status          string
-	CreatedAt       time.Time
+	TransactionUuid    uuid.UUID
+	Consumer           string
+	UserName           string
+	EmailSubject       sql.NullString
+	EmailText          sql.NullString
+	Html               sql.NullString
+	SenderName         string
+	SenderEmail        string
+	RecipientsName     string
+	RecipientsEmail    string
+	Status             string
+	CreatedAt          time.Time
+	EnableOpenTracking bool
+	Opened             bool
 }
 
 func (q *Queries) CreateEmail(ctx context.Context, arg CreateEmailParams) (Email, error) {
@@ -53,6 +56,8 @@ func (q *Queries) CreateEmail(ctx context.Context, arg CreateEmailParams) (Email
 		arg.RecipientsEmail,
 		arg.Status,
 		arg.CreatedAt,
+		arg.EnableOpenTracking,
+		arg.Opened,
 	)
 	var i Email
 	err := row.Scan(
@@ -68,6 +73,8 @@ func (q *Queries) CreateEmail(ctx context.Context, arg CreateEmailParams) (Email
 		&i.RecipientsEmail,
 		&i.Status,
 		&i.CreatedAt,
+		&i.EnableOpenTracking,
+		&i.Opened,
 	)
 	return i, err
 }
@@ -76,7 +83,8 @@ const getEmailByTransactionUUID = `-- name: GetEmailByTransactionUUID :one
 SELECT
     transaction_uuid, consumer, user_name, email_subject, email_text, html,
     sender_name, sender_email, recipients_name, recipients_email,
-    status, created_at
+    status, created_at,
+    enable_open_tracking, opened
 FROM emails
 WHERE transaction_uuid = $1 AND consumer = $2
 `
@@ -102,6 +110,8 @@ func (q *Queries) GetEmailByTransactionUUID(ctx context.Context, arg GetEmailByT
 		&i.RecipientsEmail,
 		&i.Status,
 		&i.CreatedAt,
+		&i.EnableOpenTracking,
+		&i.Opened,
 	)
 	return i, err
 }
@@ -110,7 +120,7 @@ const getEmailConsumer = `-- name: GetEmailConsumer :many
 SELECT
     transaction_uuid, consumer, user_name, email_subject, email_text, html,
     sender_name, sender_email, recipients_name, recipients_email,
-    status, created_at
+    status, created_at, enable_open_tracking, opened
 FROM emails
 WHERE consumer = $1
 ORDER BY created_at DESC
@@ -138,6 +148,8 @@ func (q *Queries) GetEmailConsumer(ctx context.Context, consumer string) ([]Emai
 			&i.RecipientsEmail,
 			&i.Status,
 			&i.CreatedAt,
+			&i.EnableOpenTracking,
+			&i.Opened,
 		); err != nil {
 			return nil, err
 		}

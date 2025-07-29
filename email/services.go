@@ -55,17 +55,18 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 
 	// Create email params struct with single instances of repeated fields
 	emailParams := database.CreateEmailParams{
-		TransactionUuid: transactionUUID,
-		Consumer:        consumer,
-		UserName:        params.UserName,
-		EmailSubject:    emailSubject,
-		Html:            html,
-		SenderName:      params.SenderName,
-		SenderEmail:     params.SenderEmail,
-		RecipientsName:  params.RecipientName,
-		RecipientsEmail: params.RecipientEmail,
-		Status:          "pending",
-		CreatedAt:       time.Now(),
+		TransactionUuid:    transactionUUID,
+		Consumer:           consumer,
+		UserName:           params.UserName,
+		EmailSubject:       emailSubject,
+		Html:               html,
+		SenderName:         params.SenderName,
+		SenderEmail:        params.SenderEmail,
+		RecipientsName:     params.RecipientName,
+		RecipientsEmail:    params.RecipientEmail,
+		Status:             "pending",
+		CreatedAt:          time.Now(),
+		EnableOpenTracking: params.EnableOpenTracking,
 	}
 
 	dbEmail, err := apiCfg.DB.CreateEmail(c, emailParams)
@@ -76,7 +77,6 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 
 	// Convert database email entry to Email struct
 	email := DatabaseEmailToEmail(dbEmail)
-
 	// Send the email using the configured email sender
 	sendResult, err := apiCfg.EmailSender.Send(email)
 

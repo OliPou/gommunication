@@ -12,18 +12,20 @@ import (
 )
 
 type Email struct {
-	TransactionUuid uuid.UUID
-	Consumer        string
-	UserName        string
-	EmailSubject    sql.NullString
-	EmailText       sql.NullString
-	Html            sql.NullString
-	SenderName      string
-	SenderEmail     string
-	RecipientsName  string
-	RecipientsEmail string
-	Status          string
-	CreatedAt       time.Time
+	TransactionUuid    uuid.UUID
+	Consumer           string
+	UserName           string
+	EmailSubject       sql.NullString
+	EmailText          sql.NullString
+	Html               sql.NullString
+	SenderName         string
+	SenderEmail        string
+	RecipientsName     string
+	RecipientsEmail    string
+	Status             string
+	CreatedAt          time.Time
+	EnableOpenTracking sql.NullBool
+	Opened             sql.NullBool
 }
 
 type TextMessage struct {

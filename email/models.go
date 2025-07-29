@@ -34,22 +34,28 @@ type Email struct {
 	Status string `json:"status"`
 	// Timestamp when the email was created
 	CreatedAt time.Time `json:"createdAt"`
+	// EnableOpenTracking indicates if open tracking is enabled for the email
+	EnableOpenTracking bool `json:"enableOpenTracking"`
+	// Opened indicates if the email has been opened
+	Opened bool `json:"opened"`
 }
 
 func DatabaseEmailToEmail(dbEmail database.Email) Email {
 	return Email{
-		TransactionUuid: dbEmail.TransactionUuid,
-		Consumer:        dbEmail.Consumer,
-		UserName:        dbEmail.UserName,
-		EmailSubject:    dbEmail.EmailSubject.String,
-		EmailText:       dbEmail.EmailText.String,
-		Html:            dbEmail.Html.String,
-		SenderName:      dbEmail.SenderName,
-		SenderEmail:     dbEmail.SenderEmail,
-		RecipientName:   dbEmail.RecipientsName,
-		RecipientEmail:  dbEmail.RecipientsEmail,
-		Status:          dbEmail.Status,
-		CreatedAt:       dbEmail.CreatedAt,
+		TransactionUuid:    dbEmail.TransactionUuid,
+		Consumer:           dbEmail.Consumer,
+		UserName:           dbEmail.UserName,
+		EmailSubject:       dbEmail.EmailSubject.String,
+		EmailText:          dbEmail.EmailText.String,
+		Html:               dbEmail.Html.String,
+		SenderName:         dbEmail.SenderName,
+		SenderEmail:        dbEmail.SenderEmail,
+		RecipientName:      dbEmail.RecipientsName,
+		RecipientEmail:     dbEmail.RecipientsEmail,
+		Status:             dbEmail.Status,
+		CreatedAt:          dbEmail.CreatedAt,
+		EnableOpenTracking: dbEmail.EnableOpenTracking.Bool,
+		Opened:             dbEmail.Opened.Bool,
 	}
 }
 
@@ -72,4 +78,6 @@ type EmailParams struct {
 	RecipientName string `json:"recipientName" binding:"required"`
 	// Email address of the recipient
 	RecipientEmail string `json:"recipientEmail" binding:"required"`
+	// EnableOpenTracking indicates if open tracking is enabled for the email
+	EnableOpenTracking bool `json:"enableOpenTracking" binding:"required"`
 }

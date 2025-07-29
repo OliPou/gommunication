@@ -14,5 +14,8 @@ CREATE TABLE emails(
     created_at TIMESTAMP NOT NULL
 );
 
+ALTER TABLE emails ADD COLUMN enable_open_tracking BOOLEAN DEFAULT FALSE;
+ALTER TABLE emails ADD COLUMN opened BOOLEAN DEFAULT FALSE;
+
 -- +goose Down
 DROP TABLE emails;
