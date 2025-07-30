@@ -59,3 +59,46 @@ func (apiCfg *ApiConfig) HandlerGetEmails(c *gin.Context, consumer string) {
 	config.LogClient(c, fmt.Sprintf("Retrieved %d emails for consumer: %s", len(emails), consumer), zapcore.InfoLevel)
 	common.RespondWithJSON(c, http.StatusOK, emails)
 }
+
+// HandlerSendGridWebhook godoc
+// @Summary Handle SendGrid webhook events
+// @Description Processes events from SendGrid webhook, such as email opens
+// @Tags Email
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} common.ErrorResponse
+// @Router /sendgrid/webhooks/event [post]
+// @Param events body []SendGridEvent true "SendGrid events"
+// @Security ApiKeyAuth
+func (apiCfg *ApiConfig) HandlerSendGridWebhook(c *gin.Context) {
+	var events []SendGridEvent
+
+	if !VerifiedSignatureSendGrid(c) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "invalid signature"})
+		return
+	}
+
+	if err := c.BindJSON(&events); err != nil {
+		config.LogClient(c, "Error binding JSON for SendGrid webhook: "+err.Error(), zapcore.ErrorLevel)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON"})
+		return
+	}
+
+	for _, event := range events {
+		if event.Event == "open" {
+			config.LogClient(c, fmt.Sprintf("Processing open event for email: %s", event.Email), zapcore.InfoLevel)
+			if err := UpdateEmailOpened(c, apiCfg, event.TransactionUUID, true); err != nil {
+				config.LogClient(c, "Error updating email opened status: "+err.Error(), zapcore.ErrorLevel)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update email opened status"})
+				return
+			}
+			config.LogClient(c, fmt.Sprintf("Email opened for transaction UUID: %s", event.TransactionUUID), zapcore.InfoLevel)
+		} else {
+			config.LogClient(c, fmt.Sprintf("Received non-open event: %s for email: %s", event.Event, event.Email), zapcore.InfoLevel)
+			return
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
+
+}

@@ -54,8 +54,8 @@ func DatabaseEmailToEmail(dbEmail database.Email) Email {
 		RecipientEmail:     dbEmail.RecipientsEmail,
 		Status:             dbEmail.Status,
 		CreatedAt:          dbEmail.CreatedAt,
-		EnableOpenTracking: dbEmail.EnableOpenTracking.Bool,
-		Opened:             dbEmail.Opened.Bool,
+		EnableOpenTracking: dbEmail.EnableOpenTracking,
+		Opened:             dbEmail.Opened,
 	}
 }
 
@@ -80,4 +80,31 @@ type EmailParams struct {
 	RecipientEmail string `json:"recipientEmail" binding:"required"`
 	// EnableOpenTracking indicates if open tracking is enabled for the email
 	EnableOpenTracking bool `json:"enableOpenTracking" binding:"required"`
+}
+
+// SendGridEvent represents an event received from SendGrid's webhook.
+// It contains information about the email event, such as the recipient's email address,
+// event type, IP address, content type, event ID, machine open status, message ID,
+// timestamp, transaction UUID, and user agent.
+type SendGridEvent struct {
+	// Email address of the recipient
+	Email string `json:"email"`
+	// Type of event (e.g., "open", "click")
+	Event string `json:"event"`
+	// IP address of the recipient
+	IP string `json:"ip"`
+	// Content type of the email
+	SGContentType string `json:"sg_content_type"`
+	// Event ID from SendGrid
+	SGEventID string `json:"sg_event_id"`
+	// Indicates if the email was opened by a machine
+	SGMachineOpen bool `json:"sg_machine_open"`
+	// Message ID from SendGrid
+	SGMessageID string `json:"sg_message_id"`
+	// Timestamp of the event
+	Timestamp int64 `json:"timestamp"`
+	// Transaction UUID associated with the email
+	TransactionUUID uuid.UUID `json:"transaction_uuid"`
+	// User agent of the recipient's device
+	UserAgent string `json:"useragent"`
 }

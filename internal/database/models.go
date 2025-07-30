@@ -24,8 +24,8 @@ type Email struct {
 	RecipientsEmail    string
 	Status             string
 	CreatedAt          time.Time
-	EnableOpenTracking sql.NullBool
-	Opened             sql.NullBool
+	EnableOpenTracking bool
+	Opened             bool
 }
 
 type TextMessage struct {

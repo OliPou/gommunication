@@ -30,6 +30,9 @@ func SetupRouter(deps *di.AppDependencies) *gin.Engine {
 	emailRouter.POST("/send", middleware.Auth(apiCfg.HandlerSendEmail))
 	emailRouter.GET("/", middleware.Auth(apiCfg.HandlerGetEmails))
 
+	sendgridRouter := router.Group("/sendgrid")
+	sendgridRouter.POST("/webhooks/event", apiCfg.HandlerSendGridWebhook)
+
 	textMessageRouter := router.Group("/text-message")
 	textMessageRouter.POST("/send", middleware.Auth(apiCfgTextMessage.HandlerSendTextMessage))
 	textMessageRouter.GET("/", middleware.Auth(apiCfgTextMessage.HandlerGetTextMessages))

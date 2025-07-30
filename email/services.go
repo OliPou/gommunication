@@ -1,8 +1,11 @@
 package email
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 	"time"
 
@@ -11,6 +14,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sendgrid/sendgrid-go/helpers/eventwebhook"
 	"go.uber.org/zap"
 )
 
@@ -163,4 +167,72 @@ func HtmlToPlainText(html string) string {
 		return ""
 	}
 	return strings.TrimSpace(doc.Text())
+}
+
+// UpdateEmailOpened updates the 'opened' status of an email in the database for a given transaction UUID.
+// It logs an error if the update fails and returns an error indicating the failure.
+//
+// Parameters:
+//   - c: the Gin context for the current HTTP request.
+//   - apiCfg: the API configuration containing the database connection.
+//   - transactionUUID: the UUID of the email transaction to update.
+//   - opened: a boolean indicating whether the email has been opened.
+//
+// Returns:
+//   - error: an error if the update fails, otherwise nil.
+func UpdateEmailOpened(c *gin.Context, apiCfg *ApiConfig, transactionUUID uuid.UUID, opened bool) error {
+	if err := apiCfg.DB.UpdateEmailOpened(c, database.UpdateEmailOpenedParams{
+		TransactionUuid: transactionUUID,
+		Opened:          opened,
+	}); err != nil {
+		config.LogClient(nil, "Error updating email opened status in database: "+err.Error(), zap.ErrorLevel)
+		return fmt.Errorf("error updating email opened status")
+	}
+	return nil
+}
+
+// VerifiedSignatureSendGrid verifies the SendGrid webhook signature from the incoming HTTP request.
+// It checks for the required SendGrid headers, reads and restores the request body,
+// converts the SendGrid public key from base64 to ECDSA format, and verifies the signature.
+// Logs relevant information and errors using the configured logger.
+// Returns true if the signature is valid, false otherwise.
+func VerifiedSignatureSendGrid(c *gin.Context) bool {
+	signature := c.GetHeader(eventwebhook.VerificationHTTPHeader)
+	timestamp := c.GetHeader(eventwebhook.TimestampHTTPHeader)
+
+	sendgridPublicKeyBase64 := os.Getenv("SENDGRID_VERIFICATION_KEY")
+
+	if signature == "" || timestamp == "" {
+		config.LogClient(c, "Missing SendGrid headers", zap.ErrorLevel)
+		return false
+	}
+
+	bodyBytes, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		config.LogClient(c, "Failed to read request body", zap.ErrorLevel)
+		return false
+	}
+
+	// Recharge le body pour BindJSON ensuite
+	c.Request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+
+	pubKey, err := eventwebhook.ConvertPublicKeyBase64ToECDSA(sendgridPublicKeyBase64)
+	if err != nil {
+		config.LogClient(c, "Invalid public key format: "+err.Error(), zap.ErrorLevel)
+		return false
+	}
+
+	ok, err := eventwebhook.VerifySignature(pubKey, bodyBytes, signature, timestamp)
+	if err != nil {
+		config.LogClient(c, "Signature verification failed: "+err.Error(), zap.ErrorLevel)
+		return false
+	}
+
+	if !ok {
+		config.LogClient(c, "SendGrid signature invalid", zap.WarnLevel)
+		return false
+	}
+
+	config.LogClient(c, "SendGrid signature verified", zap.InfoLevel)
+	return true
 }

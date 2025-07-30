@@ -164,6 +164,23 @@ func (q *Queries) GetEmailConsumer(ctx context.Context, consumer string) ([]Emai
 	return items, nil
 }
 
+const updateEmailOpened = `-- name: UpdateEmailOpened :exec
+UPDATE emails
+SET opened = $2
+WHERE transaction_uuid = $1
+RETURNING transaction_uuid, consumer, user_name, email_subject, email_text, html, sender_name, sender_email, recipients_name, recipients_email, status, created_at, enable_open_tracking, opened
+`
+
+type UpdateEmailOpenedParams struct {
+	TransactionUuid uuid.UUID
+	Opened          bool
+}
+
+func (q *Queries) UpdateEmailOpened(ctx context.Context, arg UpdateEmailOpenedParams) error {
+	_, err := q.db.ExecContext(ctx, updateEmailOpened, arg.TransactionUuid, arg.Opened)
+	return err
+}
+
 const updateEmailStatus = `-- name: UpdateEmailStatus :exec
 UPDATE emails
 SET status = $2

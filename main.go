@@ -42,8 +42,7 @@ func run() error {
 
 	// Load env
 	if err := config.LoadEnv(); err != nil {
-		config.LogClient(nil, "Failed to load environment variables: "+err.Error(), zap.ErrorLevel)
-		return err
+		config.LogClient(nil, "Failed to load environment variables: "+err.Error(), zap.InfoLevel)
 	}
 
 	// Init DB connection

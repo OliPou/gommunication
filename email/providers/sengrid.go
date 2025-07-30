@@ -39,6 +39,10 @@ func (s *SendGridEmailSender) Send(e email.Email) (email.SendResult, error) {
 
 	p := mail.NewPersonalization()
 	p.AddTos(to)
+
+	addCustomArgs(p, map[string]string{
+		"transaction_uuid": e.TransactionUuid.String(),
+	})
 	message.AddPersonalizations(p)
 
 	message.AddContent(mail.NewContent("text/plain", plainText))
@@ -73,4 +77,14 @@ func enableOpenTracking(message *mail.SGMailV3) {
 	openTracking.SetEnable(true)
 	trackingSettings.SetOpenTracking(openTracking)
 	message.SetTrackingSettings(trackingSettings)
+}
+
+func addCustomArgs(p *mail.Personalization, args map[string]string) {
+	if p.CustomArgs == nil {
+		p.CustomArgs = make(map[string]string)
+	}
+
+	for k, v := range args {
+		p.CustomArgs[k] = v
+	}
 }

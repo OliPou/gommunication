@@ -28,3 +28,10 @@ ORDER BY created_at DESC;
 UPDATE emails
 SET status = $2
 WHERE transaction_uuid = $1;
+
+-- name: UpdateEmailOpened :exec
+UPDATE emails
+SET opened = $2
+WHERE transaction_uuid = $1
+RETURNING *;
+

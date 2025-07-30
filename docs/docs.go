@@ -130,6 +130,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/sendgrid/webhooks/event": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Processes events from SendGrid webhook, such as email opens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Handle SendGrid webhook events",
+                "parameters": [
+                    {
+                        "description": "SendGrid events",
+                        "name": "events",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/email.SendGridEvent"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/text-message": {
             "get": {
                 "security": [
@@ -385,9 +436,17 @@ const docTemplate = `{
                     "description": "Plain text content of the email",
                     "type": "string"
                 },
+                "enableOpenTracking": {
+                    "description": "EnableOpenTracking indicates if open tracking is enabled for the email",
+                    "type": "boolean"
+                },
                 "html": {
                     "description": "HTML content of the email",
                     "type": "string"
+                },
+                "opened": {
+                    "description": "Opened indicates if the email has been opened",
+                    "type": "boolean"
                 },
                 "recipientEmail": {
                     "description": "Email address of the recipient",
@@ -425,6 +484,7 @@ const docTemplate = `{
             "required": [
                 "emailSubject",
                 "emailText",
+                "enableOpenTracking",
                 "html",
                 "recipientEmail",
                 "recipientName",
@@ -440,6 +500,10 @@ const docTemplate = `{
                 "emailText": {
                     "description": "Plain text content of the email",
                     "type": "string"
+                },
+                "enableOpenTracking": {
+                    "description": "EnableOpenTracking indicates if open tracking is enabled for the email",
+                    "type": "boolean"
                 },
                 "html": {
                     "description": "HTML content of the email",
@@ -463,6 +527,51 @@ const docTemplate = `{
                 },
                 "userName": {
                     "description": "Name of the user sending the email",
+                    "type": "string"
+                }
+            }
+        },
+        "email.SendGridEvent": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "Email address of the recipient",
+                    "type": "string"
+                },
+                "event": {
+                    "description": "Type of event (e.g., \"open\", \"click\")",
+                    "type": "string"
+                },
+                "ip": {
+                    "description": "IP address of the recipient",
+                    "type": "string"
+                },
+                "sg_content_type": {
+                    "description": "Content type of the email",
+                    "type": "string"
+                },
+                "sg_event_id": {
+                    "description": "Event ID from SendGrid",
+                    "type": "string"
+                },
+                "sg_machine_open": {
+                    "description": "Indicates if the email was opened by a machine",
+                    "type": "boolean"
+                },
+                "sg_message_id": {
+                    "description": "Message ID from SendGrid",
+                    "type": "string"
+                },
+                "timestamp": {
+                    "description": "Timestamp of the event",
+                    "type": "integer"
+                },
+                "transaction_uuid": {
+                    "description": "Transaction UUID associated with the email",
+                    "type": "string"
+                },
+                "useragent": {
+                    "description": "User agent of the recipient's device",
                     "type": "string"
                 }
             }

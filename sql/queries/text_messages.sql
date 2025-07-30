@@ -34,3 +34,4 @@ SET status = $3,
     err_code = $5
 WHERE message_id = $1 AND api_key = $2
 RETURNING *;
+
