@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/OliPou/gommunication/internal/common"
 	"github.com/OliPou/gommunication/internal/config"
 	"github.com/OliPou/gommunication/internal/database"
 	"github.com/PuerkitoBio/goquery"
@@ -56,6 +57,18 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 
 	description := fmt.Sprintf("Sending email | transaction_uuid: %s | consumer: %s | subject: %s | html: %s", transactionUUID.String(), consumer, emailSubject.String, html.String)
 	config.LogClient(nil, description, zap.InfoLevel)
+
+	domain := extractDomainFromEmail(params.SenderEmail)
+
+	allowed, err := apiCfg.DB.IsSubdomainAllowedForConsumer(c, database.IsSubdomainAllowedForConsumerParams{Name: domain, ApiKey: consumer})
+	if err != nil {
+		config.LogClient(nil, "DB error checking subdomain permission: "+err.Error(), zap.ErrorLevel)
+		return Email{}, fmt.Errorf("internal error while checking subdomain permission")
+	}
+	if !allowed {
+		config.LogClient(nil, fmt.Sprintf("Unauthorized subdomain usage: %s for consumer %s", domain, consumer), zap.WarnLevel)
+		return Email{}, common.NewForbiddenError(fmt.Sprintf("You are not allowed to use this subdomain: %s", domain))
+	}
 
 	// Create email params struct with single instances of repeated fields
 	emailParams := database.CreateEmailParams{
@@ -152,6 +165,17 @@ func successSendEmail(c *gin.Context, apiCfg *ApiConfig, transactionUUID uuid.UU
 	return nil
 }
 
+// extractDomainFromEmail extracts the domain part from an email address.
+// It splits the email address at the '@' character and returns the domain part.
+// If the email address is invalid (does not contain '@'), it returns an empty string.
+func extractDomainFromEmail(email string) string {
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		return ""
+	}
+	return parts[1]
+}
+
 // HtmlToPlainText converts an HTML string to plain text by parsing the HTML and extracting its textual content.
 // If an error occurs during parsing, it logs the error and returns an empty string.
 //
@@ -235,4 +259,30 @@ func VerifiedSignatureSendGrid(c *gin.Context) bool {
 
 	config.LogClient(c, "SendGrid signature verified", zap.InfoLevel)
 	return true
+}
+
+// CreateSubdomainOwnership creates a new subdomain ownership record in the database.
+// It takes a Gin context, the parameters for subdomain ownership, the consumer identifier,
+// and the API configuration. The function logs the creation attempt and any errors encountered.
+// On success, it returns the created SubdomainOwnership and a nil error; otherwise, it returns
+// an empty SubdomainOwnership and an error.
+func CreateSubdomainOwnership(c *gin.Context, params SubdomainOwnership, consumer string, apiCfg *ApiConfig) (SubdomainOwnership, error) {
+	subdomainOwnership := database.CreateSubdomainOwnershipParams{
+		SubdomainOwnershipUuid: uuid.New(),
+		SubdomainID:            params.SubdomainID,
+		ApiKey:                 params.APIKey,
+	}
+	config.LogClient(c, fmt.Sprintf("Consumer %s creating subdomain ownership for subdomain ID: %s with API key: %s", consumer, subdomainOwnership.SubdomainID, subdomainOwnership.ApiKey), zap.InfoLevel)
+
+	sub, err := apiCfg.DB.CreateSubdomainOwnership(c, subdomainOwnership)
+	if err != nil {
+		config.LogClient(c, "Error creating subdomain ownership: "+err.Error(), zap.ErrorLevel)
+		return SubdomainOwnership{}, fmt.Errorf("error creating subdomain ownership")
+	}
+	result := SubdomainOwnership{
+		SubdomainOwnershipUUID: sub.SubdomainOwnershipUuid,
+		SubdomainID:            sub.SubdomainID,
+		APIKey:                 sub.ApiKey,
+	}
+	return result, nil
 }

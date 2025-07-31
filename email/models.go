@@ -108,3 +108,13 @@ type SendGridEvent struct {
 	// User agent of the recipient's device
 	UserAgent string `json:"useragent"`
 }
+
+// SubdomainOwnership represents the ownership details of a subdomain,
+// including its unique identifier, associated subdomain ID, API key,
+// and the timestamp when the ownership record was created.
+type SubdomainOwnership struct {
+	// ID of the subdomain ownership record
+	SubdomainOwnershipUUID uuid.UUID `json:"subdomain_ownership_uuid"`
+	SubdomainID            uuid.UUID `json:"subdomain_id"`
+	APIKey                 string    `json:"api_key"`
+}

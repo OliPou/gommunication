@@ -30,6 +30,8 @@ func SetupRouter(deps *di.AppDependencies) *gin.Engine {
 	emailRouter.POST("/send", middleware.Auth(apiCfg.HandlerSendEmail))
 	emailRouter.GET("/", middleware.Auth(apiCfg.HandlerGetEmails))
 
+	emailRouter.POST("/subdomain-ownerships", middleware.Auth(apiCfg.CreateSubdomainOwnership))
+
 	sendgridRouter := router.Group("/sendgrid")
 	sendgridRouter.POST("/webhooks/event", apiCfg.HandlerSendGridWebhook)
 

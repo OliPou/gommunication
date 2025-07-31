@@ -30,7 +30,11 @@ func (apiCfg *ApiConfig) HandlerSendEmail(c *gin.Context, consumer string) {
 	}
 	sendEmail, err := SendEmail(c, params, consumer, apiCfg, uuid.New)
 	if err != nil {
-		common.RespondError(c, http.StatusInternalServerError, err.Error())
+		if reqErr, ok := err.(*common.RequestError); ok {
+			common.RespondError(c, reqErr.StatusCode, reqErr.Message)
+		} else {
+			common.RespondError(c, http.StatusInternalServerError, err.Error())
+		}
 		return
 	}
 
@@ -58,6 +62,33 @@ func (apiCfg *ApiConfig) HandlerGetEmails(c *gin.Context, consumer string) {
 	}
 	config.LogClient(c, fmt.Sprintf("Retrieved %d emails for consumer: %s", len(emails), consumer), zapcore.InfoLevel)
 	common.RespondWithJSON(c, http.StatusOK, emails)
+}
+
+// CreateSubdomainOwnership godoc
+// @Summary Create a subdomain ownership
+// @Description Creates a subdomain ownership record for a consumer
+// @Tags Email
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param subdomainOwnership body SubdomainOwnership true "Subdomain ownership parameters"
+// @Success 200 {object} SubdomainOwnership
+// @Failure 500 {object} common.ErrorResponse
+// @Router /email/subdomain-ownerships [post]
+func (apiCfg *ApiConfig) CreateSubdomainOwnership(c *gin.Context, consumer string) {
+	var params SubdomainOwnership
+	if err := common.ValidateRequest(c, &params); err != nil {
+		common.RespondError(c, http.StatusInternalServerError, fmt.Sprintf("Error validating body: %v", err))
+		return
+	}
+	subdomainOwnership, err := CreateSubdomainOwnership(c, params, consumer, apiCfg)
+	if err != nil {
+		common.RespondError(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	config.LogClient(c, fmt.Sprintf("Subdomain ownership created with ID: %d", subdomainOwnership.SubdomainOwnershipUUID), zapcore.InfoLevel)
+	common.RespondWithJSON(c, http.StatusOK, subdomainOwnership)
 }
 
 // HandlerSendGridWebhook godoc

@@ -127,6 +127,18 @@ definitions:
         description: User agent of the recipient's device
         type: string
     type: object
+  email.SubdomainOwnership:
+    properties:
+      api_key:
+        type: string
+      created_at:
+        type: string
+      subdomain_id:
+        type: string
+      subdomain_ownership_uuid:
+        description: ID of the subdomain ownership record
+        type: string
+    type: object
   textmessage.TextMessage:
     properties:
       consumer:
@@ -222,6 +234,34 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Send an email
+      tags:
+      - Email
+  /email/subdomain-ownerships:
+    post:
+      consumes:
+      - application/json
+      description: Creates a subdomain ownership record for a consumer
+      parameters:
+      - description: Subdomain ownership parameters
+        in: body
+        name: subdomainOwnership
+        required: true
+        schema:
+          $ref: '#/definitions/email.SubdomainOwnership'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/email.SubdomainOwnership'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a subdomain ownership
       tags:
       - Email
   /healthz:

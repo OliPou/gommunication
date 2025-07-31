@@ -106,6 +106,51 @@ const docTemplate = `{
                 }
             }
         },
+        "/email/subdomain-ownerships": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Creates a subdomain ownership record for a consumer",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Create a subdomain ownership",
+                "parameters": [
+                    {
+                        "description": "Subdomain ownership parameters",
+                        "name": "subdomainOwnership",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/email.SubdomainOwnership"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/email.SubdomainOwnership"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/healthz": {
             "get": {
                 "description": "Check if the server is running",
@@ -572,6 +617,24 @@ const docTemplate = `{
                 },
                 "useragent": {
                     "description": "User agent of the recipient's device",
+                    "type": "string"
+                }
+            }
+        },
+        "email.SubdomainOwnership": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "subdomain_id": {
+                    "type": "string"
+                },
+                "subdomain_ownership_uuid": {
+                    "description": "ID of the subdomain ownership record",
                     "type": "string"
                 }
             }

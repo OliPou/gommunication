@@ -11,6 +11,12 @@ import (
 	"github.com/google/uuid"
 )
 
+type AvailableSubdomain struct {
+	AvailableSubdomainUuid uuid.UUID
+	Name                   string
+	CreatedAt              time.Time
+}
+
 type Email struct {
 	TransactionUuid    uuid.UUID
 	Consumer           string
@@ -26,6 +32,13 @@ type Email struct {
 	CreatedAt          time.Time
 	EnableOpenTracking bool
 	Opened             bool
+}
+
+type SubdomainOwnership struct {
+	SubdomainOwnershipUuid uuid.UUID
+	SubdomainID            uuid.UUID
+	ApiKey                 string
+	CreatedAt              time.Time
 }
 
 type TextMessage struct {
