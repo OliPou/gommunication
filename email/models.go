@@ -38,6 +38,8 @@ type Email struct {
 	EnableOpenTracking bool `json:"enableOpenTracking"`
 	// Opened indicates if the email has been opened
 	Opened bool `json:"opened"`
+	// ReplyTo is the email address to which replies should be sent
+	ReplyTo string `json:"replyTo"`
 }
 
 func DatabaseEmailToEmail(dbEmail database.Email) Email {
@@ -56,6 +58,7 @@ func DatabaseEmailToEmail(dbEmail database.Email) Email {
 		CreatedAt:          dbEmail.CreatedAt,
 		EnableOpenTracking: dbEmail.EnableOpenTracking,
 		Opened:             dbEmail.Opened,
+		ReplyTo:            dbEmail.ReplyTo.String,
 	}
 }
 
@@ -80,6 +83,8 @@ type EmailParams struct {
 	RecipientEmail string `json:"recipientEmail" binding:"required"`
 	// EnableOpenTracking indicates if open tracking is enabled for the email
 	EnableOpenTracking bool `json:"enableOpenTracking" binding:"required"`
+	// ReplyTo is the email address to which replies should be sent
+	ReplyTo *string `json:"replyTo"`
 }
 
 // SendGridEvent represents an event received from SendGrid's webhook.

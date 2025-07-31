@@ -54,6 +54,7 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 	transactionUUID := generateUUID()
 	emailSubject := dereferenceString(params.EmailSubject)
 	html := dereferenceString(params.Html)
+	replyTo := dereferenceString(params.ReplyTo)
 
 	description := fmt.Sprintf("Sending email | transaction_uuid: %s | consumer: %s | subject: %s | html: %s", transactionUUID.String(), consumer, emailSubject.String, html.String)
 	config.LogClient(nil, description, zap.InfoLevel)
@@ -84,6 +85,7 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 		Status:             "pending",
 		CreatedAt:          time.Now(),
 		EnableOpenTracking: params.EnableOpenTracking,
+		ReplyTo:            replyTo,
 	}
 
 	dbEmail, err := apiCfg.DB.CreateEmail(c, emailParams)

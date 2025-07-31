@@ -501,6 +501,10 @@ const docTemplate = `{
                     "description": "Name of the recipient",
                     "type": "string"
                 },
+                "replyTo": {
+                    "description": "ReplyTo is the email address to which replies should be sent",
+                    "type": "string"
+                },
                 "senderEmail": {
                     "description": "Email address of the sender",
                     "type": "string"
@@ -560,6 +564,10 @@ const docTemplate = `{
                 },
                 "recipientName": {
                     "description": "Name of the recipient",
+                    "type": "string"
+                },
+                "replyTo": {
+                    "description": "ReplyTo is the email address to which replies should be sent",
                     "type": "string"
                 },
                 "senderEmail": {
@@ -625,9 +633,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "api_key": {
-                    "type": "string"
-                },
-                "created_at": {
                     "type": "string"
                 },
                 "subdomain_id": {

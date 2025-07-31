@@ -3,9 +3,9 @@ INSERT INTO emails (
     transaction_uuid, consumer, user_name, email_subject, email_text, html,
     sender_name, sender_email, recipients_name, recipients_email,
     status, created_at,
-    enable_open_tracking, opened
+    enable_open_tracking, opened, reply_to
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
 )
 RETURNING *;
 -- name: GetEmailByTransactionUUID :one
@@ -13,14 +13,14 @@ SELECT
     transaction_uuid, consumer, user_name, email_subject, email_text, html,
     sender_name, sender_email, recipients_name, recipients_email,
     status, created_at,
-    enable_open_tracking, opened
+    enable_open_tracking, opened, reply_to
 FROM emails
 WHERE transaction_uuid = $1 AND consumer = $2;
 -- name: GetEmailConsumer :many
 SELECT
     transaction_uuid, consumer, user_name, email_subject, email_text, html,
     sender_name, sender_email, recipients_name, recipients_email,
-    status, created_at, enable_open_tracking, opened
+    status, created_at, enable_open_tracking, opened, reply_to
 FROM emails
 WHERE consumer = $1
 ORDER BY created_at DESC;

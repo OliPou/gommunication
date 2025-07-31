@@ -32,6 +32,7 @@ type Email struct {
 	CreatedAt          time.Time
 	EnableOpenTracking bool
 	Opened             bool
+	ReplyTo            sql.NullString
 }
 
 type SubdomainOwnership struct {

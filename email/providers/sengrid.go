@@ -43,6 +43,12 @@ func (s *SendGridEmailSender) Send(e email.Email) (email.SendResult, error) {
 	addCustomArgs(p, map[string]string{
 		"transaction_uuid": e.TransactionUuid.String(),
 	})
+
+	if e.ReplyTo != "" {
+		replyTo := mail.NewEmail(e.SenderName, e.ReplyTo)
+		message.SetReplyTo(replyTo)
+	}
+
 	message.AddPersonalizations(p)
 
 	message.AddContent(mail.NewContent("text/plain", plainText))
