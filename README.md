@@ -130,3 +130,60 @@ Key Component Interactions:
 5. Database layer maintains persistent record of all communications
 6. Webhook endpoints receive and process delivery status updates
 7. Response handlers format and return appropriate status information to clients
+
+
+## DI Schema
+```
+
+                            +-----------------+
+                            |     main.go     |
+                            +-----------------+
+                                     |
+                            calls run() → init app
+                                     |
+                                     v
+                      +-----------------------------+
+                      |  di.BuildDependencies()      |
+                      +-----------------------------+
+                                     |
+         +---------------------------+---------------------------+
+         |                           |                           |
+         v                           v                           v
++------------------+   +--------------------------+   +--------------------------+
+| config.DB (SQL)  |   | SendGridEmailSender      |   | Env vars (VONAGE_*)      |
++------------------+   +--------------------------+   +--------------------------+
+         |                          |                           |
+         v                          v                           v
++-----------------------------+  +--------------------------+   |
+| database.New(config.DB)     |  | sendgrid.NewSendClient() |   |
+| → dbQueries                 |  +--------------------------+   |
++-----------------------------+                                 |
+         |                                                      |
+         v                                                      v
++--------------------------------------+     +------------------------------------------+
+| email.ApiConfig                      |     | textmessage.ApiConfig                    |
+|  - DB: dbQueries                     |     |  - DB: dbQueries                         |
+|  - EmailSender: SendGridEmailSender  |     |  - ApiKey, Secret, URLs from env vars    |
++--------------------------------------+     +------------------------------------------+
+         |                                                      |
+         +------------------------+-----------------------------+
+                                  |
+                                  v
+                    +------------------------------+
+                    |   AppDependencies struct     |
+                    |   - APICfg                   |
+                    |   - APICfgTextMessage        |
+                    |   - ...                      |
+                    +------------------------------+
+                                  |
+                                  v
+                    +------------------------------+
+                    | routers.SetupRouter(deps)    |
+                    |  (handler injection)         |
+                    +------------------------------+
+                                  |
+                                  v
+                        +------------------+
+                        |   Gin Router     |
+                        +------------------+
+```
