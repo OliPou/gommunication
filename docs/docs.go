@@ -632,13 +632,13 @@ const docTemplate = `{
         "email.SubdomainOwnership": {
             "type": "object",
             "properties": {
-                "api_key": {
+                "apiKey": {
                     "type": "string"
                 },
-                "subdomain_id": {
+                "subdomainID": {
                     "type": "string"
                 },
-                "subdomain_ownership_uuid": {
+                "subdomainOwnershipUUID": {
                     "description": "ID of the subdomain ownership record",
                     "type": "string"
                 }
