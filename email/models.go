@@ -119,7 +119,7 @@ type SendGridEvent struct {
 // and the timestamp when the ownership record was created.
 type SubdomainOwnership struct {
 	// ID of the subdomain ownership record
-	SubdomainOwnershipUUID uuid.UUID `json:"subdomain_ownership_uuid"`
-	SubdomainID            uuid.UUID `json:"subdomain_id"`
-	APIKey                 string    `json:"api_key"`
+	SubdomainOwnershipUUID uuid.UUID `json:"subdomainOwnershipUUID"`
+	SubdomainID            uuid.UUID `json:"subdomainID"`
+	APIKey                 string    `json:"apiKey"`
 }
