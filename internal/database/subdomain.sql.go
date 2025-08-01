@@ -14,13 +14,18 @@ import (
 const createAvailableSubdomain = `-- name: CreateAvailableSubdomain :one
 INSERT INTO available_subdomains (name)
 VALUES ($1)
-RETURNING available_subdomain_uuid, name, created_at
+RETURNING available_subdomain_uuid, name, created_at, is_default
 `
 
 func (q *Queries) CreateAvailableSubdomain(ctx context.Context, name string) (AvailableSubdomain, error) {
 	row := q.db.QueryRowContext(ctx, createAvailableSubdomain, name)
 	var i AvailableSubdomain
-	err := row.Scan(&i.AvailableSubdomainUuid, &i.Name, &i.CreatedAt)
+	err := row.Scan(
+		&i.AvailableSubdomainUuid,
+		&i.Name,
+		&i.CreatedAt,
+		&i.IsDefault,
+	)
 	return i, err
 }
 
@@ -49,14 +54,19 @@ func (q *Queries) CreateSubdomainOwnership(ctx context.Context, arg CreateSubdom
 }
 
 const getAvailableSubdomainByName = `-- name: GetAvailableSubdomainByName :one
-SELECT available_subdomain_uuid, name, created_at FROM available_subdomains
+SELECT available_subdomain_uuid, name, created_at, is_default FROM available_subdomains
 WHERE name = $1
 `
 
 func (q *Queries) GetAvailableSubdomainByName(ctx context.Context, name string) (AvailableSubdomain, error) {
 	row := q.db.QueryRowContext(ctx, getAvailableSubdomainByName, name)
 	var i AvailableSubdomain
-	err := row.Scan(&i.AvailableSubdomainUuid, &i.Name, &i.CreatedAt)
+	err := row.Scan(
+		&i.AvailableSubdomainUuid,
+		&i.Name,
+		&i.CreatedAt,
+		&i.IsDefault,
+	)
 	return i, err
 }
 
@@ -97,9 +107,9 @@ func (q *Queries) GetSubdomainOwnershipBySubdomain(ctx context.Context, subdomai
 const isSubdomainAllowedForConsumer = `-- name: IsSubdomainAllowedForConsumer :one
 SELECT EXISTS (
   SELECT 1
-  FROM subdomain_ownerships o
-  JOIN available_subdomains s ON s.available_subdomain_uuid = o.subdomain_id
-  WHERE s.name = $1 AND o.api_key = $2
+  FROM available_subdomains s
+  LEFT JOIN subdomain_ownerships o ON s.available_subdomain_uuid = o.subdomain_id AND o.api_key = $2
+  WHERE s.name = $1 AND (o.api_key IS NOT NULL OR s.is_default = TRUE)
 ) AS allowed
 `
 

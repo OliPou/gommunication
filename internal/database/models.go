@@ -15,6 +15,7 @@ type AvailableSubdomain struct {
 	AvailableSubdomainUuid uuid.UUID
 	Name                   string
 	CreatedAt              time.Time
+	IsDefault              bool
 }
 
 type Email struct {
