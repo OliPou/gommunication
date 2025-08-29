@@ -135,7 +135,7 @@ definitions:
     type: object
   email.SubdomainOwnership:
     properties:
-      apiKey:
+      businessUnit:
         type: string
       subdomainID:
         type: string
@@ -189,11 +189,17 @@ info:
   title: Your Project API
   version: "1.0"
 paths:
-  /email:
+  /{bu}/email:
     get:
       consumes:
       - application/json
       description: Retrieves all emails for a specific consumer
+      parameters:
+      - description: Business Unit
+        in: path
+        name: bu
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -212,12 +218,17 @@ paths:
       summary: Get all emails
       tags:
       - Email
-  /email/send:
+  /{bu}/email/send:
     post:
       consumes:
       - application/json
       description: Sends an email with the provided parameters
       parameters:
+      - description: Business Unit
+        in: path
+        name: bu
+        required: true
+        type: string
       - description: Email parameters
         in: body
         name: email
@@ -240,12 +251,17 @@ paths:
       summary: Send an email
       tags:
       - Email
-  /email/subdomain-ownerships:
+  /{bu}/email/subdomain-ownerships:
     post:
       consumes:
       - application/json
       description: Creates a subdomain ownership record for a consumer
       parameters:
+      - description: Business Unit
+        in: path
+        name: bu
+        required: true
+        type: string
       - description: Subdomain ownership parameters
         in: body
         name: subdomainOwnership
@@ -459,6 +475,6 @@ paths:
 securityDefinitions:
   ApiKeyAuth:
     in: header
-    name: x-application-id
+    name: x-consumer-id
     type: apiKey
 swagger: "2.0"
