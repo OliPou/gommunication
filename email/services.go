@@ -50,7 +50,7 @@ func dereferenceString(s *string) sql.NullString {
 // Returns:
 //   - Email: the sent email as an Email struct.
 //   - error: an error if the email could not be created or sent.
-func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiConfig, generateUUID UUIDGenerator) (Email, error) {
+func SendEmail(c *gin.Context, params EmailParams, consumer string, bu string, apiCfg *ApiConfig, generateUUID UUIDGenerator) (Email, error) {
 	transactionUUID := generateUUID()
 	emailSubject := dereferenceString(params.EmailSubject)
 	html := dereferenceString(params.Html)
@@ -61,13 +61,13 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 
 	domain := extractDomainFromEmail(params.SenderEmail)
 
-	allowed, err := apiCfg.DB.IsSubdomainAllowedForConsumer(c, database.IsSubdomainAllowedForConsumerParams{Name: domain, ApiKey: consumer})
+	allowed, err := apiCfg.DB.IsSubdomainAllowedForConsumer(c, database.IsSubdomainAllowedForConsumerParams{Name: domain, BusinessUnit: bu})
 	if err != nil {
 		config.LogClient(nil, "DB error checking subdomain permission: "+err.Error(), zap.ErrorLevel)
 		return Email{}, fmt.Errorf("internal error while checking subdomain permission")
 	}
 	if !allowed {
-		config.LogClient(nil, fmt.Sprintf("Unauthorized subdomain usage: %s for consumer %s", domain, consumer), zap.WarnLevel)
+		config.LogClient(nil, fmt.Sprintf("Unauthorized subdomain usage: %s for consumer %s with Business Unit: %s", domain, consumer, bu), zap.WarnLevel)
 		return Email{}, common.NewForbiddenError(fmt.Sprintf("You are not allowed to use this subdomain: %s", domain))
 	}
 
@@ -125,7 +125,6 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, apiCfg *ApiC
 // It takes a Gin context, an API configuration, and the consumer identifier as parameters.
 // Returns a slice of Email objects and an error if the retrieval fails.
 func GetEmails(c *gin.Context, apiCfg *ApiConfig, consumer string) ([]Email, error) {
-
 	dbEmails, err := apiCfg.DB.GetEmailConsumer(c, consumer)
 	if err != nil {
 		config.LogClient(nil, "Error getting email entries from database: "+err.Error(), zap.ErrorLevel)
@@ -268,13 +267,20 @@ func VerifiedSignatureSendGrid(c *gin.Context) bool {
 // and the API configuration. The function logs the creation attempt and any errors encountered.
 // On success, it returns the created SubdomainOwnership and a nil error; otherwise, it returns
 // an empty SubdomainOwnership and an error.
-func CreateSubdomainOwnership(c *gin.Context, params SubdomainOwnership, consumer string, apiCfg *ApiConfig) (SubdomainOwnership, error) {
+func CreateSubdomainOwnership(c *gin.Context, params SubdomainOwnership, consumer string, bu string, apiCfg *ApiConfig) (SubdomainOwnership, error) {
+
+	if params.BusinessUnit != bu {
+		errMsg := fmt.Sprintf("BusinessUnit params %s does not match with Business Unit path %s", params.BusinessUnit, bu)
+		config.LogClient(c, errMsg, zap.ErrorLevel)
+		return SubdomainOwnership{}, fmt.Errorf("%s", errMsg)
+	}
+
 	subdomainOwnership := database.CreateSubdomainOwnershipParams{
 		SubdomainOwnershipUuid: uuid.New(),
 		SubdomainID:            params.SubdomainID,
-		ApiKey:                 params.APIKey,
+		BusinessUnit:           params.BusinessUnit,
 	}
-	config.LogClient(c, fmt.Sprintf("Consumer %s creating subdomain ownership for subdomain ID: %s with API key: %s", consumer, subdomainOwnership.SubdomainID, subdomainOwnership.ApiKey), zap.InfoLevel)
+	config.LogClient(c, fmt.Sprintf("Consumer %s creating subdomain ownership for subdomain ID: %s with Business Unit: %s", consumer, subdomainOwnership.SubdomainID, subdomainOwnership.BusinessUnit), zap.InfoLevel)
 
 	sub, err := apiCfg.DB.CreateSubdomainOwnership(c, subdomainOwnership)
 	if err != nil {
@@ -284,7 +290,7 @@ func CreateSubdomainOwnership(c *gin.Context, params SubdomainOwnership, consume
 	result := SubdomainOwnership{
 		SubdomainOwnershipUUID: sub.SubdomainOwnershipUuid,
 		SubdomainID:            sub.SubdomainID,
-		APIKey:                 sub.ApiKey,
+		BusinessUnit:           sub.BusinessUnit,
 	}
 	return result, nil
 }

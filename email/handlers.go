@@ -18,17 +18,19 @@ import (
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
+// @Param bu path string  true  "Business Unit"
 // @Param email body EmailParams true "Email parameters"
 // @Success 200 {object} Email
 // @Failure 500 {object} common.ErrorResponse
-// @Router /email/send [post]
+// @Router /{bu}/email/send [post]
 func (apiCfg *ApiConfig) HandlerSendEmail(c *gin.Context, consumer string) {
 	var params EmailParams
 	if err := common.ValidateRequest(c, &params); err != nil {
-		common.RespondError(c, http.StatusInternalServerError, fmt.Sprintf("Error validating body: %v", err))
+		common.RespondError(c, http.StatusBadRequest, fmt.Sprintf("Error validating body: %v", err))
 		return
 	}
-	sendEmail, err := SendEmail(c, params, consumer, apiCfg, uuid.New)
+	bu := c.GetString("bu")
+	sendEmail, err := SendEmail(c, params, consumer, bu, apiCfg, uuid.New)
 	if err != nil {
 		if reqErr, ok := err.(*common.RequestError); ok {
 			common.RespondError(c, reqErr.StatusCode, reqErr.Message)
@@ -50,9 +52,10 @@ func (apiCfg *ApiConfig) HandlerSendEmail(c *gin.Context, consumer string) {
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
+// @Param bu path string  true  "Business Unit"
 // @Success 200 {array} Email
 // @Failure 500 {object} common.ErrorResponse
-// @Router /email [get]
+// @Router /{bu}/email [get]
 func (apiCfg *ApiConfig) HandlerGetEmails(c *gin.Context, consumer string) {
 
 	emails, err := GetEmails(c, apiCfg, consumer)
@@ -60,7 +63,7 @@ func (apiCfg *ApiConfig) HandlerGetEmails(c *gin.Context, consumer string) {
 		common.RespondError(c, http.StatusInternalServerError, fmt.Sprintf("Error getting emails: %v", err))
 		return
 	}
-	config.LogClient(c, fmt.Sprintf("Retrieved %d emails for consumer: %s", len(emails), consumer), zapcore.InfoLevel)
+	config.LogClient(c, fmt.Sprintf("Retrieved %d emails for consumer: %s with Business Unit: %s", len(emails), consumer, c.GetString("bu")), zapcore.InfoLevel)
 	common.RespondWithJSON(c, http.StatusOK, emails)
 }
 
@@ -71,17 +74,18 @@ func (apiCfg *ApiConfig) HandlerGetEmails(c *gin.Context, consumer string) {
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
+// @Param bu path string  true  "Business Unit"
 // @Param subdomainOwnership body SubdomainOwnership true "Subdomain ownership parameters"
 // @Success 200 {object} SubdomainOwnership
 // @Failure 500 {object} common.ErrorResponse
-// @Router /email/subdomain-ownerships [post]
+// @Router /{bu}/email/subdomain-ownerships [post]
 func (apiCfg *ApiConfig) CreateSubdomainOwnership(c *gin.Context, consumer string) {
 	var params SubdomainOwnership
 	if err := common.ValidateRequest(c, &params); err != nil {
 		common.RespondError(c, http.StatusInternalServerError, fmt.Sprintf("Error validating body: %v", err))
 		return
 	}
-	subdomainOwnership, err := CreateSubdomainOwnership(c, params, consumer, apiCfg)
+	subdomainOwnership, err := CreateSubdomainOwnership(c, params, consumer, c.GetString("bu"), apiCfg)
 	if err != nil {
 		common.RespondError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -127,7 +131,6 @@ func (apiCfg *ApiConfig) HandlerSendGridWebhook(c *gin.Context) {
 			config.LogClient(c, fmt.Sprintf("Email opened for transaction UUID: %s", event.TransactionUUID), zapcore.InfoLevel)
 		} else {
 			config.LogClient(c, fmt.Sprintf("Received non-open event: %s for email: %s", event.Event, event.Email), zapcore.InfoLevel)
-			return
 		}
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "success"})

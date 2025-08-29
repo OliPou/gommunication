@@ -25,8 +25,12 @@ func SetupRouter(deps *di.AppDependencies) *gin.Engine {
 	})
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
+	// Set up Business Unit routes
+	bu := router.Group("/:bu",
+		middleware.BUValidator(),
+	)
 	// Set up Email and Text Message routes
-	emailRouter := router.Group("/email")
+	emailRouter := bu.Group("/email")
 	emailRouter.POST("/send", middleware.Auth(apiCfg.HandlerSendEmail))
 	emailRouter.GET("/", middleware.Auth(apiCfg.HandlerGetEmails))
 

@@ -30,24 +30,24 @@ func (q *Queries) CreateAvailableSubdomain(ctx context.Context, name string) (Av
 }
 
 const createSubdomainOwnership = `-- name: CreateSubdomainOwnership :one
-INSERT INTO subdomain_ownerships (subdomain_ownership_uuid, subdomain_id, api_key)
+INSERT INTO subdomain_ownerships (subdomain_ownership_uuid, subdomain_id, business_unit)
 VALUES ($1, $2, $3)
-RETURNING subdomain_ownership_uuid, subdomain_id, api_key, created_at
+RETURNING subdomain_ownership_uuid, subdomain_id, business_unit, created_at
 `
 
 type CreateSubdomainOwnershipParams struct {
 	SubdomainOwnershipUuid uuid.UUID
 	SubdomainID            uuid.UUID
-	ApiKey                 string
+	BusinessUnit           string
 }
 
 func (q *Queries) CreateSubdomainOwnership(ctx context.Context, arg CreateSubdomainOwnershipParams) (SubdomainOwnership, error) {
-	row := q.db.QueryRowContext(ctx, createSubdomainOwnership, arg.SubdomainOwnershipUuid, arg.SubdomainID, arg.ApiKey)
+	row := q.db.QueryRowContext(ctx, createSubdomainOwnership, arg.SubdomainOwnershipUuid, arg.SubdomainID, arg.BusinessUnit)
 	var i SubdomainOwnership
 	err := row.Scan(
 		&i.SubdomainOwnershipUuid,
 		&i.SubdomainID,
-		&i.ApiKey,
+		&i.BusinessUnit,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -71,24 +71,24 @@ func (q *Queries) GetAvailableSubdomainByName(ctx context.Context, name string) 
 }
 
 const getSubdomainOwnershipByApiKey = `-- name: GetSubdomainOwnershipByApiKey :one
-SELECT subdomain_ownership_uuid, subdomain_id, api_key, created_at FROM subdomain_ownerships
-WHERE api_key = $1
+SELECT subdomain_ownership_uuid, subdomain_id, business_unit, created_at FROM subdomain_ownerships
+WHERE business_unit = $1
 `
 
-func (q *Queries) GetSubdomainOwnershipByApiKey(ctx context.Context, apiKey string) (SubdomainOwnership, error) {
-	row := q.db.QueryRowContext(ctx, getSubdomainOwnershipByApiKey, apiKey)
+func (q *Queries) GetSubdomainOwnershipByApiKey(ctx context.Context, businessUnit string) (SubdomainOwnership, error) {
+	row := q.db.QueryRowContext(ctx, getSubdomainOwnershipByApiKey, businessUnit)
 	var i SubdomainOwnership
 	err := row.Scan(
 		&i.SubdomainOwnershipUuid,
 		&i.SubdomainID,
-		&i.ApiKey,
+		&i.BusinessUnit,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getSubdomainOwnershipBySubdomain = `-- name: GetSubdomainOwnershipBySubdomain :one
-SELECT subdomain_ownership_uuid, subdomain_id, api_key, created_at FROM subdomain_ownerships
+SELECT subdomain_ownership_uuid, subdomain_id, business_unit, created_at FROM subdomain_ownerships
 WHERE subdomain_id = $1
 `
 
@@ -98,7 +98,7 @@ func (q *Queries) GetSubdomainOwnershipBySubdomain(ctx context.Context, subdomai
 	err := row.Scan(
 		&i.SubdomainOwnershipUuid,
 		&i.SubdomainID,
-		&i.ApiKey,
+		&i.BusinessUnit,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -108,18 +108,18 @@ const isSubdomainAllowedForConsumer = `-- name: IsSubdomainAllowedForConsumer :o
 SELECT EXISTS (
   SELECT 1
   FROM available_subdomains s
-  LEFT JOIN subdomain_ownerships o ON s.available_subdomain_uuid = o.subdomain_id AND o.api_key = $2
-  WHERE s.name = $1 AND (o.api_key IS NOT NULL OR s.is_default = TRUE)
+  LEFT JOIN subdomain_ownerships o ON s.available_subdomain_uuid = o.subdomain_id AND o.business_unit = $2
+  WHERE s.name = $1 AND (o.business_unit IS NOT NULL OR s.is_default = TRUE)
 ) AS allowed
 `
 
 type IsSubdomainAllowedForConsumerParams struct {
-	Name   string
-	ApiKey string
+	Name         string
+	BusinessUnit string
 }
 
 func (q *Queries) IsSubdomainAllowedForConsumer(ctx context.Context, arg IsSubdomainAllowedForConsumerParams) (bool, error) {
-	row := q.db.QueryRowContext(ctx, isSubdomainAllowedForConsumer, arg.Name, arg.ApiKey)
+	row := q.db.QueryRowContext(ctx, isSubdomainAllowedForConsumer, arg.Name, arg.BusinessUnit)
 	var allowed bool
 	err := row.Scan(&allowed)
 	return allowed, err

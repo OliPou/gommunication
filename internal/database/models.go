@@ -39,7 +39,7 @@ type Email struct {
 type SubdomainOwnership struct {
 	SubdomainOwnershipUuid uuid.UUID
 	SubdomainID            uuid.UUID
-	ApiKey                 string
+	BusinessUnit           string
 	CreatedAt              time.Time
 }
 
