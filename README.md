@@ -57,7 +57,7 @@ go build -o gommunication
 2. Send an email:
 ```bash
 curl -X POST http://localhost:8081/email/send \
-  -H "x-application-id: your-api-key" \
+  -H "x-consumer-id: your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "emailSubject": "Test Email",
@@ -74,7 +74,7 @@ curl -X POST http://localhost:8081/email/send \
 3. Send an SMS:
 ```bash
 curl -X POST http://localhost:8081/text-message/send \
-  -H "x-application-id: your-api-key" \
+  -H "x-consumer-id: your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "recipient": "+1234567890",
@@ -88,20 +88,20 @@ curl -X POST http://localhost:8081/text-message/send \
 #### Retrieving Email History
 ```bash
 curl -X GET http://localhost:8081/email \
-  -H "x-application-id: your-api-key"
+  -H "x-consumer-id: your-api-key"
 ```
 
 #### Retrieving SMS History
 ```bash
 curl -X GET http://localhost:8081/text-message \
-  -H "x-application-id: your-api-key"
+  -H "x-consumer-id: your-api-key"
 ```
 
 ### Troubleshooting
 #### Common Issues
 1. Authentication Failures
    - Error: "401 Unauthorized"
-   - Solution: Verify your API key is correctly set in the x-application-id header
+   - Solution: Verify your API key is correctly set in the x-consumer-id header
 
 2. Database Connection Issues
    - Error: "failed to connect to database"

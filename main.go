@@ -27,7 +27,7 @@ import (
 // @BasePath /
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
-// @name x-application-id
+// @name x-consumer-id
 
 func main() {
 	if err := run(); err != nil {
