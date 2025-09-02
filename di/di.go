@@ -8,6 +8,7 @@ import (
 	"github.com/OliPou/gommunication/internal/config"
 	"github.com/OliPou/gommunication/internal/database"
 	"github.com/OliPou/gommunication/textmessage"
+	textMsgProviders "github.com/OliPou/gommunication/textmessage/providers"
 	"github.com/sendgrid/sendgrid-go"
 )
 
@@ -34,12 +35,18 @@ func BuildDependencies() *AppDependencies {
 		EmailSender: emailSender,
 	}
 
+	textMsgSender := &textMsgProviders.VonageTextMessageSender{
+		Client: textMsgProviders.NewVonageClient(
+			os.Getenv("VONAGE_API_KEY"),
+			os.Getenv("VONAGE_API_SECRET"),
+			os.Getenv("VONAGE_API_URL"),
+			os.Getenv("VONAGE_API_CALL_BACK_URL"),
+		),
+	}
+
 	apiCfgTextMessage := &textmessage.ApiConfig{
-		DB:                   dbQueries,
-		ApiKey:               os.Getenv("VONAGE_API_KEY"),
-		ApiSecret:            os.Getenv("VONAGE_API_SECRET"),
-		VonageApiUrl:         os.Getenv("VONAGE_API_URL"),
-		VonageApiCallBackUrl: os.Getenv("VONAGE_API_CALL_BACK_URL"),
+		DB:                dbQueries,
+		TextMessageSender: textMsgSender,
 	}
 
 	return &AppDependencies{

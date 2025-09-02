@@ -2,14 +2,10 @@ package textmessage
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"strings"
-	"time"
 
 	"github.com/OliPou/gommunication/internal/database"
 	"github.com/gin-gonic/gin"
@@ -47,93 +43,9 @@ func dereferenceString(s *string) sql.NullString {
 	}
 }
 
-// func SendTextMessage(c *gin.Context, params TextMessageParams, consumer string, apiCfg *ApiConfig, generateUUID UUIDGenerator) ([]TextMessage, error) {
-// 	// Generate a unique transaction UUID
-// 	fmt.Printf("CallBackUrl: %s", apiCfg.VonageApiCallBackUrl)
-// 	var smsEncoding string
-
-// 	if isGSM7(params.Text) {
-// 		smsEncoding = "text"
-// 		slog.Info("GSM 7-bit SMS encoding detected")
-// 	} else {
-// 		smsEncoding = "unicode"
-// 		slog.Info("Unicode SMS encoding detected")
-// 	}
-
-// 	// First, try to send the SMS via Nexmo API
-// 	formData := url.Values{
-// 		"api_key":    {apiCfg.ApiKey},
-// 		"api_secret": {apiCfg.ApiSecret},
-// 		"to":         {params.Recipient},
-// 		"from":       {params.Sender},
-// 		"text":       {params.Text},
-// 		"type":       {smsEncoding},
-// 		"callback":   {apiCfg.VonageApiCallBackUrl},
-// 	}
-
-// 	// Make the POST request to Nexmo
-// 	resp, err := http.PostForm(fmt.Sprintf("%s/sms/json", apiCfg.VonageApiUrl), formData)
-// 	if err != nil {
-// 		slog.Error("error sending text message", "error", err)
-// 		return []TextMessage{}, fmt.Errorf("error sending text message: %v", err)
-// 	}
-// 	defer resp.Body.Close()
-
-// 	// Read the response body
-// 	body, err := io.ReadAll(resp.Body)
-// 	if err != nil {
-// 		return []TextMessage{}, fmt.Errorf("error reading response body: %v", err)
-// 	}
-
-// 	// Log the response body for debugging
-// 	fmt.Printf("Response body: %s\n", string(body))
-
-// 	// Parse the JSON response
-// 	var vonageResp VonageResponse
-// 	if err := json.Unmarshal(body, &vonageResp); err != nil {
-// 		return []TextMessage{}, fmt.Errorf("error parsing response JSON: %v", err)
-// 	}
-
-// 	fmt.Printf("Api response %s", vonageResp.MessageCount)
-
-// 	var textMessages []TextMessage
-// 	for _, message := range vonageResp.Messages {
-// 		status := "failed"
-// 		if message.Status == "0" {
-// 			status = "pending"
-// 		}
-
-// 		// Save to database
-// 		textMessageParams := database.CreateTextMessageParams{
-// 			MessageID: uuid.MustParse(message.MessageID),
-// 			Consumer:  consumer,
-// 			UserName:  params.UserName,
-// 			Sender:    params.Sender,
-// 			Recipient: params.Recipient,
-// 			Status:    status,
-// 			ApiKey:    apiCfg.ApiKey,
-// 			Price:     message.MessagePrice,
-// 			CreatedAt: time.Now(),
-// 		}
-
-// 		dbTextMessage, err := apiCfg.DB.CreateTextMessage(c, textMessageParams)
-// 		if err != nil {
-// 			return []TextMessage{}, fmt.Errorf("error creating text message entry: %v", err)
-// 		}
-
-// 		textMessages = append(textMessages, DatabaseTextMessageToTextMessage(dbTextMessage))
-// 	}
-
-// 	if len(textMessages) == 0 {
-// 		return []TextMessage{}, fmt.Errorf("failed to send SMS")
-// 	}
-
-// 	return textMessages, nil
-// }
-
 func SendTextMessage(c *gin.Context, params TextMessageParams, consumer string, apiCfg *ApiConfig, generateUUID UUIDGenerator) ([]TextMessage, error) {
 	// Generate a unique transaction UUID
-	fmt.Printf("CallBackUrl: %s", apiCfg.VonageApiCallBackUrl)
+	fmt.Printf("CallBackUrl: %s", apiCfg.TextMessageSender.GetApiCallBackUrl())
 	var smsEncoding string
 
 	if isGSM7(params.Text) {
@@ -144,63 +56,14 @@ func SendTextMessage(c *gin.Context, params TextMessageParams, consumer string, 
 		slog.Info("Unicode SMS encoding detected")
 	}
 
-	// First, try to send the SMS via Nexmo API
-	formData := url.Values{
-		"api_key":    {apiCfg.ApiKey},
-		"api_secret": {apiCfg.ApiSecret},
-		"to":         {params.Recipient},
-		"from":       {params.Sender},
-		"text":       {params.Text},
-		"type":       {smsEncoding},
-		"callback":   {apiCfg.VonageApiCallBackUrl},
-	}
-
-	// Make the POST request to Nexmo
-	resp, err := http.PostForm(fmt.Sprintf("%s/sms/json", apiCfg.VonageApiUrl), formData)
+	textMessagesParams, err := apiCfg.TextMessageSender.SendTextMessage(consumer, params, smsEncoding)
 	if err != nil {
-		slog.Error("error sending text message", "error", err)
 		return []TextMessage{}, fmt.Errorf("error sending text message: %v", err)
 	}
-	defer resp.Body.Close()
-
-	// Read the response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return []TextMessage{}, fmt.Errorf("error reading response body: %v", err)
-	}
-
-	// Log the response body for debugging
-	fmt.Printf("Response body: %s\n", string(body))
-
-	// Parse the JSON response
-	var vonageResp VonageResponse
-	if err := json.Unmarshal(body, &vonageResp); err != nil {
-		return []TextMessage{}, fmt.Errorf("error parsing response JSON: %v", err)
-	}
-
-	fmt.Printf("Api response %s", vonageResp.MessageCount)
 
 	var textMessages []TextMessage
-	for _, message := range vonageResp.Messages {
-		status := "failed"
-		if message.Status == "0" {
-			status = "pending"
-		}
-
-		// Save to database
-		textMessageParams := database.CreateTextMessageParams{
-			MessageID: uuid.MustParse(message.MessageID),
-			Consumer:  consumer,
-			UserName:  params.UserName,
-			Sender:    params.Sender,
-			Recipient: params.Recipient,
-			Status:    status,
-			ApiKey:    apiCfg.ApiKey,
-			Price:     message.MessagePrice,
-			CreatedAt: time.Now(),
-		}
-
-		dbTextMessage, err := apiCfg.DB.CreateTextMessage(c, textMessageParams)
+	for _, message := range textMessagesParams {
+		dbTextMessage, err := apiCfg.DB.CreateTextMessage(c, message)
 		if err != nil {
 			return []TextMessage{}, fmt.Errorf("error creating text message entry: %v", err)
 		}
@@ -215,30 +78,6 @@ func SendTextMessage(c *gin.Context, params TextMessageParams, consumer string, 
 
 	return textMessages, nil
 }
-
-// func TextMessageWebHook(c *gin.Context, params TextMessageWebHookResponse, apiCfg *ApiConfig) (TextMessageWebHookResponse, error) {
-// 	var dlr TextMessageWebHookResponse
-// 	if err := c.ShouldBindQuery(&dlr); err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return TextMessageWebHookResponse{}, err
-// 	}
-// 	_, err := apiCfg.DB.UpdateTextMessageStatus(c, database.UpdateTextMessageStatusParams{
-// 		MessageID: uuid.MustParse(dlr.MessageID),
-// 		ApiKey:    dlr.ApiKey,
-// 		Status:    dlr.Status,
-// 		Price:     dlr.Price,
-// 		ErrCode: sql.NullString{
-// 			String: dlr.ErrCode,
-// 			Valid:  true,
-// 		},
-// 	})
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return TextMessageWebHookResponse{}, err
-// 	}
-
-// 	return dlr, nil
-// }
 
 func TextMessageWebHook(c *gin.Context, params TextMessageWebHookResponse, apiCfg *ApiConfig) (TextMessageWebHookResponse, error) {
 	var dlr TextMessageWebHookResponse
@@ -263,16 +102,6 @@ func TextMessageWebHook(c *gin.Context, params TextMessageWebHookResponse, apiCf
 
 	return dlr, nil
 }
-
-// func GetTextMessages(c *gin.Context, apiCfg *ApiConfig, consumer string) ([]TextMessage, error) {
-// 	textMessagesRows, err := apiCfg.DB.GetTextMessages(c, consumer)
-// 	if err != nil {
-// 		return []TextMessage{}, err
-// 	}
-// 	textMessages := ConvertGetTextMessagesRowsToTextMessages(textMessagesRows)
-
-// 	return textMessages, nil
-// }
 
 func GetTextMessages(c *gin.Context, apiCfg *ApiConfig, consumer string) ([]TextMessage, error) {
 	textMessagesRows, err := apiCfg.DB.GetTextMessages(c, consumer)

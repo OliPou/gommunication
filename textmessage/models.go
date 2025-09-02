@@ -7,44 +7,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// type TextMessage struct {
-// 	MessageID uuid.UUID
-// 	Consumer  string
-// 	UserName  string
-// 	Sender    string
-// 	Recipient string
-// 	Status    string
-// 	CreatedAt time.Time
-// }
-
-// func DatabaseTextMessageToTextMessage(dbTextMessage database.TextMessage) TextMessage {
-// 	return TextMessage{
-// 		MessageID: dbTextMessage.MessageID,
-// 		Consumer:  dbTextMessage.Consumer,
-// 		UserName:  dbTextMessage.UserName,
-// 		Sender:    dbTextMessage.Sender,
-// 		Recipient: dbTextMessage.Recipient,
-// 		Status:    dbTextMessage.Status,
-// 		CreatedAt: dbTextMessage.CreatedAt,
-// 	}
-// }
-
-// func ConvertGetTextMessagesRowsToTextMessages(rows []database.GetTextMessagesRow) []TextMessage {
-// 	textMessages := make([]TextMessage, len(rows))
-// 	for i, row := range rows {
-// 		textMessages[i] = TextMessage{
-// 			MessageID: row.MessageID,
-// 			Consumer:  row.Consumer,
-// 			UserName:  row.UserName,
-// 			Sender:    row.Sender,
-// 			Recipient: row.Recipient,
-// 			Status:    row.Status,
-// 			CreatedAt: row.CreatedAt,
-// 		}
-// 	}
-// 	return textMessages
-// }
-
 type TextMessageParams struct {
 	UserName  string `json:"userName" binding:"required"`
 	Sender    string `json:"sender" binding:"required"`
@@ -79,7 +41,6 @@ type VonageResponse struct {
 	MessageCount string `json:"message-count"`
 }
 
-// TEST -------------
 type TextMessageInterface interface {
 	GetMessageID() uuid.UUID
 	GetConsumer() string
