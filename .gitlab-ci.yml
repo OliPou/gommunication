@@ -1,47 +1,28 @@
-variables:
-  REQUIREMENTS: ${CI_PROJECT_DIR}/requirements.txt
-  CI_REGISTRY_CI_IMAGE: $CI_REGISTRY_IMAGE/ci
-  GOOS: linux # Set target OS (e.g., linux, darwin, windows)
-  GOARCH: amd64 # Set architecture (e.g., amd64, arm64)
-
-
 stages:
   - pre-build
   - build
+
+# --------------------------------------------------------------------
 
 .azure_auth: &azure_auth
   - az login --service-principal -u $AZURE_CLIENT_ID -t $AZURE_TENANT_ID --federated-token $GITLAB_OIDC_TOKEN
   - az account show
 
-build-package:
-  stage: pre-build
-  image: golang:latest
-  script:
-    - go build
-    - ls -lah
-  artifacts:
-    paths:
-      - gommunication
-    expire_in: 1 week # Optional: Set an expiration time for the artifact
-  rules:
-    - if: $CI_COMMIT_TAG != null
-
-
-acr-login:
+.acr_login: &acr_login
   stage: pre-build
   id_tokens:
     GITLAB_OIDC_TOKEN:
       aud: https://gitlab.com
+  image: mcr.microsoft.com/azure-cli
   tags:
     - hq
-  image: mcr.microsoft.com/azure-cli
   before_script:
     - *azure_auth
   script:
     - az acr login --name ${ACR_NAME} --expose-token
     - mkdir -p /kaniko/.docker/
     - ACCESS_TOKEN=$(az acr login --name ${ACR_NAME} --expose-token --output json | jq -r '.accessToken')
-    - USERNAME="00000000-0000-0000-0000-000000000000"  # Default username for ACR token authentication
+    - USERNAME="00000000-0000-0000-0000-000000000000" # Default username for ACR token authentication
     - AUTH=$(echo -n "$USERNAME:$ACCESS_TOKEN" | base64 -w 0)
     - |
       echo '{
@@ -56,28 +37,57 @@ acr-login:
       - config.json
     expire_in: 1 hour
   rules:
-    - if: '$CI_COMMIT_TAG != null'
+    - if: $CI_COMMIT_TAG
 
-build_app_image:
-  stage: build
+acr_login_developpement:
+  <<: *acr_login
+  environment:
+    name: developpement
+
+acr_login_staging:
+  <<: *acr_login
+  environment:
+    name: staging
+
+acr_login_production:
+  <<: *acr_login
   environment:
     name: production
+
+.build_image: &build_image
+  stage: build
   tags:
     - hq
   image:
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
     entrypoint: [""]
-  dependencies:
-    - acr-login
-    - build-package
   script:
     - mkdir -p /kaniko/.docker
     - cp config.json /kaniko/.docker/config.json
-    - ls -lah
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
       --destination "${ACR_NAME}.azurecr.io/gommunication:${CI_COMMIT_TAG}"
   rules:
-    - if: '$CI_COMMIT_TAG != null'
-    - if: $FORCE_BUILD_APP_DOCKER == "true"
+    - if: $CI_COMMIT_TAG
+
+build_image_developpement:
+  <<: *build_image
+  environment:
+    name: developpement
+  dependencies:
+    - acr_login_developpement
+
+build_image_staging:
+  <<: *build_image
+  environment:
+    name: staging
+  dependencies:
+    - acr_login_staging
+
+build_image_production:
+  <<: *build_image
+  environment:
+    name: production
+  dependencies:
+    - acr_login_production
