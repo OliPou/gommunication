@@ -12,6 +12,7 @@ import (
 )
 
 func SetupRouter(deps *di.AppDependencies) *gin.Engine {
+	common.RegisterValidators()
 	router := gin.Default()
 	apiCfg := deps.GetEmailConfig()
 	apiCfgTextMessage := deps.GetTextMessageConfig()

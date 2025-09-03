@@ -9,8 +9,8 @@ import (
 
 type TextMessageParams struct {
 	UserName  string `json:"userName" binding:"required"`
-	Sender    string `json:"sender" binding:"required"`
-	Recipient string `json:"recipient" binding:"required"`
+	Sender    string `json:"sender"    binding:"required,sendername"`
+	Recipient string `json:"recipient" binding:"required,e164"`
 	Text      string `json:"text" binding:"required"`
 }
 
