@@ -31,18 +31,21 @@ func SetupRouter(deps *di.AppDependencies) *gin.Engine {
 		middleware.BUValidator(),
 	)
 	// Set up Email and Text Message routes
+	emailsRouter := bu.Group("/emails")
+	emailsRouter.GET("/", middleware.Auth(apiCfg.HandlerGetEmails))
+
 	emailRouter := bu.Group("/email")
 	emailRouter.POST("/send", middleware.Auth(apiCfg.HandlerSendEmail))
-	emailRouter.GET("/", middleware.Auth(apiCfg.HandlerGetEmails))
-
 	emailRouter.POST("/subdomain-ownerships", middleware.Auth(apiCfg.CreateSubdomainOwnership))
 
 	sendgridRouter := router.Group("/sendgrid")
 	sendgridRouter.POST("/webhooks/event", apiCfg.HandlerSendGridWebhook)
 
+	textMessagesRouter := router.Group("/text-messages")
+	textMessagesRouter.GET("/", middleware.Auth(apiCfgTextMessage.HandlerGetTextMessages))
+
 	textMessageRouter := router.Group("/text-message")
 	textMessageRouter.POST("/send", middleware.Auth(apiCfgTextMessage.HandlerSendTextMessage))
-	textMessageRouter.GET("/", middleware.Auth(apiCfgTextMessage.HandlerGetTextMessages))
 	textMessageRouter.GET("/webhooks/delivery-receipt", apiCfgTextMessage.HandlerTextMessageWebHook)
 	textMessageRouter.GET("/:messageId", middleware.Auth(apiCfgTextMessage.HandlerGetTextMessage))
 

@@ -72,7 +72,7 @@ func (apiCfg *ApiConfig) HandlerTextMessageWebHook(c *gin.Context) {
 // @Success 200 {array} TextMessage
 // @Failure 401 {object} common.ErrorResponse
 // @Failure 500 {object} common.ErrorResponse
-// @Router /text-message [get]
+// @Router /text-messages [get]
 func (apiCfg *ApiConfig) HandlerGetTextMessages(c *gin.Context, consumer string) {
 	textMessages, err := GetTextMessages(c, apiCfg, consumer)
 	if err != nil {

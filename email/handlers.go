@@ -55,7 +55,7 @@ func (apiCfg *ApiConfig) HandlerSendEmail(c *gin.Context, consumer string) {
 // @Param bu path string  true  "Business Unit"
 // @Success 200 {array} Email
 // @Failure 500 {object} common.ErrorResponse
-// @Router /{bu}/email [get]
+// @Router /{bu}/emails [get]
 func (apiCfg *ApiConfig) HandlerGetEmails(c *gin.Context, consumer string) {
 
 	emails, err := GetEmails(c, apiCfg, consumer)

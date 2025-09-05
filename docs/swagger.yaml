@@ -189,35 +189,6 @@ info:
   title: Your Project API
   version: "1.0"
 paths:
-  /{bu}/email:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves all emails for a specific consumer
-      parameters:
-      - description: Business Unit
-        in: path
-        name: bu
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/email.Email'
-            type: array
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Get all emails
-      tags:
-      - Email
   /{bu}/email/send:
     post:
       consumes:
@@ -284,6 +255,35 @@ paths:
       summary: Create a subdomain ownership
       tags:
       - Email
+  /{bu}/emails:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all emails for a specific consumer
+      parameters:
+      - description: Business Unit
+        in: path
+        name: bu
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/email.Email'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get all emails
+      tags:
+      - Email
   /healthz:
     get:
       consumes:
@@ -332,31 +332,6 @@ paths:
       summary: Handle SendGrid webhook events
       tags:
       - Email
-  /text-message:
-    get:
-      description: Get text messages for a consumer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/textmessage.TextMessage'
-            type: array
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Get text messages
-      tags:
-      - TextMessage
   /text-message/{messageId}:
     get:
       description: Get a specific text message for a consumer
@@ -470,6 +445,31 @@ paths:
           schema:
             $ref: '#/definitions/common.ErrorResponse'
       summary: Receive text message webhook
+      tags:
+      - TextMessage
+  /text-messages:
+    get:
+      description: Get text messages for a consumer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/textmessage.TextMessage'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get text messages
       tags:
       - TextMessage
 securityDefinitions:

@@ -99,46 +99,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/text-message": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get text messages for a consumer",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "TextMessage"
-                ],
-                "summary": "Get text messages",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/textmessage.TextMessage"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/common.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/common.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/text-message/send": {
             "post": {
                 "security": [
@@ -324,41 +284,35 @@ const docTemplate = `{
                 }
             }
         },
-        "/{bu}/email": {
+        "/text-messages": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Retrieves all emails for a specific consumer",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Get text messages for a consumer",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Email"
+                    "TextMessage"
                 ],
-                "summary": "Get all emails",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Business Unit",
-                        "name": "bu",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
+                "summary": "Get text messages",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/email.Email"
+                                "$ref": "#/definitions/textmessage.TextMessage"
                             }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
                         }
                     },
                     "500": {
@@ -463,6 +417,52 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/email.SubdomainOwnership"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/{bu}/emails": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Retrieves all emails for a specific consumer",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Get all emails",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Business Unit",
+                        "name": "bu",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/email.Email"
+                            }
                         }
                     },
                     "500": {
