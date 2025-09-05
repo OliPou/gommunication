@@ -18,7 +18,7 @@ func SetupRouter(deps *di.AppDependencies) *gin.Engine {
 	apiCfgTextMessage := deps.GetTextMessageConfig()
 
 	// Set up Health check endpoint
-	router.GET("/healthz", handlerHealthz)
+	router.GET("/health", handlerHealthz)
 
 	// Set up Swagger
 	router.GET("/swagger", func(c *gin.Context) {
@@ -58,7 +58,7 @@ func SetupRouter(deps *di.AppDependencies) *gin.Engine {
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} map[string]interface{}
-// @Router /healthz [get]
+// @Router /health [get]
 func handlerHealthz(c *gin.Context) {
 	status := struct {
 		Status string `json:"status"`
