@@ -34,6 +34,7 @@ type Email struct {
 	EnableOpenTracking bool
 	Opened             bool
 	ReplyTo            sql.NullString
+	AccessLevel        string
 }
 
 type SubdomainOwnership struct {

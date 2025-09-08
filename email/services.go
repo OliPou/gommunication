@@ -97,7 +97,15 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, bu string, a
 	// Convert database email entry to Email struct
 	email := DatabaseEmailToEmail(dbEmail)
 	// Send the email using the configured email sender
-	sendResult, err := apiCfg.EmailSender.Send(email)
+	sender, err := apiCfg.ResolveSender(params.AccessLevel)
+	if err != nil {
+		config.LogClient(nil, err.Error(), zap.ErrorLevel)
+		if err2 := failedSendEmail(c, apiCfg, transactionUUID, &email); err2 != nil {
+			config.LogClient(nil, "Error updating email status to failed in database: "+err2.Error(), zap.ErrorLevel)
+		}
+		return email, err
+	}
+	sendResult, err := sender.Send(email)
 
 	// If sending fails, log the error and update the email status in the database
 	if err != nil {
@@ -124,8 +132,11 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, bu string, a
 // GetEmails retrieves a list of emails associated with the specified consumer from the database.
 // It takes a Gin context, an API configuration, and the consumer identifier as parameters.
 // Returns a slice of Email objects and an error if the retrieval fails.
-func GetEmails(c *gin.Context, apiCfg *ApiConfig, consumer string) ([]Email, error) {
-	dbEmails, err := apiCfg.DB.GetEmailConsumer(c, consumer)
+func GetEmails(c *gin.Context, apiCfg *ApiConfig, consumer string, bu string) ([]Email, error) {
+	dbEmails, err := apiCfg.DB.GetEmailsByConsumerAndBusinessUnit(c, database.GetEmailsByConsumerAndBusinessUnitParams{
+		Consumer:     consumer,
+		BusinessUnit: bu,
+	})
 	if err != nil {
 		config.LogClient(nil, "Error getting email entries from database: "+err.Error(), zap.ErrorLevel)
 		return []Email{}, fmt.Errorf("error getting email entry")

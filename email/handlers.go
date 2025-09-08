@@ -57,8 +57,8 @@ func (apiCfg *ApiConfig) HandlerSendEmail(c *gin.Context, consumer string) {
 // @Failure 500 {object} common.ErrorResponse
 // @Router /{bu}/emails [get]
 func (apiCfg *ApiConfig) HandlerGetEmails(c *gin.Context, consumer string) {
-
-	emails, err := GetEmails(c, apiCfg, consumer)
+	bu := c.GetString("bu")
+	emails, err := GetEmails(c, apiCfg, consumer, bu)
 	if err != nil {
 		common.RespondError(c, http.StatusInternalServerError, fmt.Sprintf("Error getting emails: %v", err))
 		return

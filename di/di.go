@@ -26,13 +26,15 @@ func BuildDependencies() *AppDependencies {
 	db := config.DB
 	dbQueries := database.New(db)
 
-	emailSender := &providers.SendGridEmailSender{
+	sendGridSender := &providers.SendGridEmailSender{
 		Client: sendgrid.NewSendClient(os.Getenv("API_KEY")),
 	}
 
 	apiCfg := &email.ApiConfig{
-		DB:          dbQueries,
-		EmailSender: emailSender,
+		DB: dbQueries,
+		EmailSenders: map[email.AccessLevel]email.EmailSender{
+			email.AccessLevelPremium: sendGridSender,
+		},
 	}
 
 	textMsgSender := &textMsgProviders.VonageTextMessageSender{

@@ -85,6 +85,8 @@ type EmailParams struct {
 	EnableOpenTracking bool `json:"enableOpenTracking" binding:"required"`
 	// ReplyTo is the email address to which replies should be sent
 	ReplyTo *string `json:"replyTo"`
+	// AccessLevel indicates the access level for selecting the email sender
+	AccessLevel AccessLevel `json:"accessLevel" binding:"required"`
 }
 
 // SendGridEvent represents an event received from SendGrid's webhook.
