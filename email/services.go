@@ -37,44 +37,120 @@ func dereferenceString(s *string) sql.NullString {
 	}
 }
 
-// validateAttachment validates an email attachment
-func validateAttachment(attachment EmailAttachment) error {
-	// Check if content is valid base64
-	if _, err := base64.StdEncoding.DecodeString(attachment.Content); err != nil {
-		return fmt.Errorf("invalid base64 content for attachment %s", attachment.Filename)
+// AttachmentLimits defines the size limits for attachments
+const (
+	MaxAttachmentSize  = 10 * 1024 * 1024 // 10MB per file (reduced from 25MB)
+	MaxTotalSize       = 20 * 1024 * 1024 // 20MB total (reduced from 30MB)
+	MaxAttachmentCount = 5                // Maximum number of attachments
+)
+
+// validateAttachmentSize validates attachment size without full decoding
+func validateAttachmentSize(base64Content string, filename string) error {
+	// Calculate decoded size without actually decoding
+	// Base64 encoding adds ~33% overhead, so we can estimate size
+	base64Len := len(base64Content)
+
+	// Remove padding characters for accurate calculation
+	padding := 0
+	if base64Len > 0 && base64Content[base64Len-1] == '=' {
+		padding++
+		if base64Len > 1 && base64Content[base64Len-2] == '=' {
+			padding++
+		}
 	}
 
-	// Validate MIME type
+	// Calculate actual file size: (base64_length - padding) * 3 / 4
+	estimatedSize := (base64Len - padding) * 3 / 4
+
+	if estimatedSize > MaxAttachmentSize {
+		return fmt.Errorf("attachment %s exceeds %dMB limit (estimated size: %dMB)",
+			filename, MaxAttachmentSize/(1024*1024), estimatedSize/(1024*1024))
+	}
+
+	return nil
+}
+
+// validateAttachment validates an email attachment with memory optimization
+func validateAttachment(attachment EmailAttachment) error {
+	// Validate MIME type first (no memory allocation)
 	if attachment.Type == "" {
 		return fmt.Errorf("MIME type is required for attachment %s", attachment.Filename)
 	}
 
-	// Check file size (limit to 25MB as per SendGrid limit)
-	decodedContent, _ := base64.StdEncoding.DecodeString(attachment.Content)
-	if len(decodedContent) > 25*1024*1024 {
-		return fmt.Errorf("attachment %s exceeds 25MB limit", attachment.Filename)
+	// Validate filename
+	if attachment.Filename == "" {
+		return fmt.Errorf("filename is required for attachment")
+	}
+
+	// Check size without full decoding
+	if err := validateAttachmentSize(attachment.Content, attachment.Filename); err != nil {
+		return err
+	}
+
+	// Only decode a small portion to validate base64 format (first 100 characters)
+	testContent := attachment.Content
+	if len(testContent) > 100 {
+		testContent = testContent[:100]
+	}
+
+	if _, err := base64.StdEncoding.DecodeString(testContent); err != nil {
+		return fmt.Errorf("invalid base64 content for attachment %s", attachment.Filename)
+	}
+
+	return nil
+}
+
+// validateAttachmentsCollection validates the entire collection efficiently
+func validateAttachmentsCollection(attachments []EmailAttachment) error {
+	if len(attachments) > MaxAttachmentCount {
+		return fmt.Errorf("too many attachments: maximum %d allowed, got %d", MaxAttachmentCount, len(attachments))
+	}
+
+	totalEstimatedSize := 0
+
+	for i, att := range attachments {
+		// Validate individual attachment
+		if err := validateAttachment(att); err != nil {
+			return fmt.Errorf("attachment %d: %w", i+1, err)
+		}
+
+		// Calculate estimated size for total size check
+		base64Len := len(att.Content)
+		padding := 0
+		if base64Len > 0 && att.Content[base64Len-1] == '=' {
+			padding++
+			if base64Len > 1 && att.Content[base64Len-2] == '=' {
+				padding++
+			}
+		}
+		estimatedSize := (base64Len - padding) * 3 / 4
+		totalEstimatedSize += estimatedSize
+	}
+
+	if totalEstimatedSize > MaxTotalSize {
+		return fmt.Errorf("total attachment size exceeds %dMB limit (estimated: %dMB)",
+			MaxTotalSize/(1024*1024), totalEstimatedSize/(1024*1024))
 	}
 
 	return nil
 }
 
 // convertToSendGridAttachments converts EmailAttachment slice to SendGrid Attachment slice
+// with memory-efficient processing
 func convertToSendGridAttachments(attachments []EmailAttachment) ([]*mail.Attachment, error) {
-	var sgAttachments []*mail.Attachment
+	// Pre-allocate slice to avoid memory reallocations
+	sgAttachments := make([]*mail.Attachment, 0, len(attachments))
 
-	for _, att := range attachments {
-		if err := validateAttachment(att); err != nil {
-			return nil, err
-		}
-
+	for i, att := range attachments {
+		// Create SendGrid attachment without additional validation
+		// (validation already done in validateAttachmentsCollection)
 		sgAttachment := mail.NewAttachment()
 		sgAttachment.SetContent(att.Content)
 		sgAttachment.SetType(att.Type)
 		sgAttachment.SetFilename(att.Filename)
 
-		if att.Name != "" {
-			// SendGrid uses SetFilename for both display name and filename
-			// If Name is different from Filename, use Name as display name
+		if att.Name != "" && att.Name != att.Filename {
+			// Use Name as display name if different from filename
 			sgAttachment.SetFilename(att.Name)
 		}
 
@@ -89,6 +165,9 @@ func convertToSendGridAttachments(attachments []EmailAttachment) ([]*mail.Attach
 		}
 
 		sgAttachments = append(sgAttachments, sgAttachment)
+
+		// Log memory-friendly message
+		config.LogClient(nil, fmt.Sprintf("Processed attachment %d/%d: %s", i+1, len(attachments), att.Filename), zap.DebugLevel)
 	}
 
 	return sgAttachments, nil
@@ -117,23 +196,10 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, bu string, a
 
 	// Validate attachments if any
 	if len(params.Attachments) > 0 {
-		totalSize := 0
-		for _, att := range params.Attachments {
-			if err := validateAttachment(att); err != nil {
-				config.LogClient(nil, "Attachment validation failed: "+err.Error(), zap.ErrorLevel)
-				return Email{}, common.NewRequestError(400, err.Error())
-			}
-
-			// Calculate total attachment size
-			decodedContent, _ := base64.StdEncoding.DecodeString(att.Content)
-			totalSize += len(decodedContent)
-		}
-
-		// Check total attachment size (30MB limit for all attachments combined)
-		if totalSize > 30*1024*1024 {
-			errMsg := "total attachment size exceeds 30MB limit"
-			config.LogClient(nil, errMsg, zap.ErrorLevel)
-			return Email{}, common.NewRequestError(400, errMsg)
+		// Use optimized validation that doesn't decode all content
+		if err := validateAttachmentsCollection(params.Attachments); err != nil {
+			config.LogClient(nil, "Attachment validation failed: "+err.Error(), zap.ErrorLevel)
+			return Email{}, common.NewRequestError(400, err.Error())
 		}
 	}
 

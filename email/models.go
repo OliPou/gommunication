@@ -7,6 +7,22 @@ import (
 	"github.com/google/uuid"
 )
 
+// AttachmentConfig holds configuration for attachment limits
+type AttachmentConfig struct {
+	MaxAttachmentSize  int // Maximum size per attachment in bytes
+	MaxTotalSize       int // Maximum total size for all attachments in bytes
+	MaxAttachmentCount int // Maximum number of attachments per email
+}
+
+// DefaultAttachmentConfig returns the default attachment configuration
+func DefaultAttachmentConfig() AttachmentConfig {
+	return AttachmentConfig{
+		MaxAttachmentSize:  10 * 1024 * 1024, // 10MB per file
+		MaxTotalSize:       20 * 1024 * 1024, // 20MB total
+		MaxAttachmentCount: 5,                // 5 attachments max
+	}
+}
+
 // Email represents the email information
 // @Description Email information and status
 type Email struct {
