@@ -13,14 +13,15 @@ import (
 
 // HandlerSendEmail godoc
 // @Summary Send an email
-// @Description Sends an email with the provided parameters
+// @Description Sends an email with the provided parameters including optional attachments
 // @Tags Email
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
 // @Param bu path string  true  "Business Unit"
-// @Param email body EmailParams true "Email parameters"
+// @Param email body EmailParams true "Email parameters with optional attachments"
 // @Success 200 {object} Email
+// @Failure 400 {object} common.ErrorResponse
 // @Failure 500 {object} common.ErrorResponse
 // @Router /{bu}/email/send [post]
 func (apiCfg *ApiConfig) HandlerSendEmail(c *gin.Context, consumer string) {

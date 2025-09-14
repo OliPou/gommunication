@@ -60,6 +60,33 @@ func (s *SendGridEmailSender) Send(e email.Email) (email.SendResult, error) {
 		enableOpenTracking(message)
 	}
 
+	// Add attachments if any
+	if len(e.Attachments) > 0 {
+		for _, att := range e.Attachments {
+			attachment := mail.NewAttachment()
+			attachment.SetContent(att.Content)
+			attachment.SetType(att.Type)
+			attachment.SetFilename(att.Filename)
+
+			if att.Name != "" {
+				// Use Name as display name if provided
+				attachment.SetFilename(att.Name)
+			}
+
+			disposition := att.Disposition
+			if disposition == "" {
+				disposition = "attachment"
+			}
+			attachment.SetDisposition(disposition)
+
+			if att.ContentID != "" {
+				attachment.SetContentID(att.ContentID)
+			}
+
+			message.AddAttachment(attachment)
+		}
+	}
+
 	resp, err := s.Client.Send(message)
 	if err != nil {
 		return email.SendResult{}, err

@@ -40,6 +40,25 @@ type Email struct {
 	Opened bool `json:"opened"`
 	// ReplyTo is the email address to which replies should be sent
 	ReplyTo string `json:"replyTo"`
+	// Attachments for the email
+	Attachments []EmailAttachment `json:"attachments,omitempty"`
+}
+
+// EmailAttachment represents an email attachment
+// @Description Email attachment information
+type EmailAttachment struct {
+	// Base64 encoded file content
+	Content string `json:"content" binding:"required"`
+	// MIME type of the file (e.g., "application/pdf", "image/jpeg")
+	Type string `json:"type" binding:"required"`
+	// Display name for the attachment
+	Name string `json:"name,omitempty"`
+	// Actual filename
+	Filename string `json:"filename" binding:"required"`
+	// Disposition: "attachment" or "inline"
+	Disposition string `json:"disposition,omitempty"`
+	// Content ID for inline attachments
+	ContentID string `json:"content_id,omitempty"`
 }
 
 func DatabaseEmailToEmail(dbEmail database.Email) Email {
@@ -87,6 +106,8 @@ type EmailParams struct {
 	ReplyTo *string `json:"replyTo"`
 	// AccessLevel indicates the access level for selecting the email sender
 	AccessLevel AccessLevel `json:"accessLevel" binding:"required"`
+	// Attachments for the email
+	Attachments []EmailAttachment `json:"attachments,omitempty"`
 }
 
 // SendGridEvent represents an event received from SendGrid's webhook.

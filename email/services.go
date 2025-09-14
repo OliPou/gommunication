@@ -3,6 +3,7 @@ package email
 import (
 	"bytes"
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sendgrid/sendgrid-go/helpers/eventwebhook"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"go.uber.org/zap"
 )
 
@@ -33,6 +35,63 @@ func dereferenceString(s *string) sql.NullString {
 		String: "",
 		Valid:  false,
 	}
+}
+
+// validateAttachment validates an email attachment
+func validateAttachment(attachment EmailAttachment) error {
+	// Check if content is valid base64
+	if _, err := base64.StdEncoding.DecodeString(attachment.Content); err != nil {
+		return fmt.Errorf("invalid base64 content for attachment %s", attachment.Filename)
+	}
+
+	// Validate MIME type
+	if attachment.Type == "" {
+		return fmt.Errorf("MIME type is required for attachment %s", attachment.Filename)
+	}
+
+	// Check file size (limit to 25MB as per SendGrid limit)
+	decodedContent, _ := base64.StdEncoding.DecodeString(attachment.Content)
+	if len(decodedContent) > 25*1024*1024 {
+		return fmt.Errorf("attachment %s exceeds 25MB limit", attachment.Filename)
+	}
+
+	return nil
+}
+
+// convertToSendGridAttachments converts EmailAttachment slice to SendGrid Attachment slice
+func convertToSendGridAttachments(attachments []EmailAttachment) ([]*mail.Attachment, error) {
+	var sgAttachments []*mail.Attachment
+
+	for _, att := range attachments {
+		if err := validateAttachment(att); err != nil {
+			return nil, err
+		}
+
+		sgAttachment := mail.NewAttachment()
+		sgAttachment.SetContent(att.Content)
+		sgAttachment.SetType(att.Type)
+		sgAttachment.SetFilename(att.Filename)
+
+		if att.Name != "" {
+			// SendGrid uses SetFilename for both display name and filename
+			// If Name is different from Filename, use Name as display name
+			sgAttachment.SetFilename(att.Name)
+		}
+
+		disposition := att.Disposition
+		if disposition == "" {
+			disposition = "attachment"
+		}
+		sgAttachment.SetDisposition(disposition)
+
+		if att.ContentID != "" {
+			sgAttachment.SetContentID(att.ContentID)
+		}
+
+		sgAttachments = append(sgAttachments, sgAttachment)
+	}
+
+	return sgAttachments, nil
 }
 
 // SendEmail handles the process of sending an email within the application.
@@ -56,7 +115,30 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, bu string, a
 	html := dereferenceString(params.Html)
 	replyTo := dereferenceString(params.ReplyTo)
 
-	description := fmt.Sprintf("Sending email | transaction_uuid: %s | consumer: %s | subject: %s | html: %s", transactionUUID.String(), consumer, emailSubject.String, html.String)
+	// Validate attachments if any
+	if len(params.Attachments) > 0 {
+		totalSize := 0
+		for _, att := range params.Attachments {
+			if err := validateAttachment(att); err != nil {
+				config.LogClient(nil, "Attachment validation failed: "+err.Error(), zap.ErrorLevel)
+				return Email{}, common.NewRequestError(400, err.Error())
+			}
+
+			// Calculate total attachment size
+			decodedContent, _ := base64.StdEncoding.DecodeString(att.Content)
+			totalSize += len(decodedContent)
+		}
+
+		// Check total attachment size (30MB limit for all attachments combined)
+		if totalSize > 30*1024*1024 {
+			errMsg := "total attachment size exceeds 30MB limit"
+			config.LogClient(nil, errMsg, zap.ErrorLevel)
+			return Email{}, common.NewRequestError(400, errMsg)
+		}
+	}
+
+	description := fmt.Sprintf("Sending email | transaction_uuid: %s | consumer: %s | subject: %s | attachments: %d",
+		transactionUUID.String(), consumer, emailSubject.String, len(params.Attachments))
 	config.LogClient(nil, description, zap.InfoLevel)
 
 	domain := extractDomainFromEmail(params.SenderEmail)
@@ -96,6 +178,10 @@ func SendEmail(c *gin.Context, params EmailParams, consumer string, bu string, a
 
 	// Convert database email entry to Email struct
 	email := DatabaseEmailToEmail(dbEmail)
+
+	// Add attachments to email struct for the sender
+	email.Attachments = params.Attachments
+
 	// Send the email using the configured email sender
 	sender, err := apiCfg.ResolveSender(params.AccessLevel)
 	if err != nil {
